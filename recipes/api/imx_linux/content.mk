@@ -47,6 +47,8 @@ LX_FILE_LISTS := $(shell find -H $(REP_DIR)/src/lib -name dep.list -or -name sou
 LX_FILES += $(shell cat $(LX_FILE_LISTS))
 LX_USB_FILE_LISTS := $(shell find -H $(REP_DIR)/src/drivers/usb_host/imx -name dep.list -or -name source.list)
 LX_FILES += $(shell cat $(LX_USB_FILE_LISTS))
+LX_FEC_FILE_LISTS := $(shell find -H $(REP_DIR)/src/drivers/nic/fec -name dep.list -or -name source.list)
+LX_FILES += $(shell cat $(LX_FEC_FILE_LISTS))
 LX_FILES := $(sort $(LX_FILES))
 MIRRORED_FROM_PORT_DIR += $(addprefix $(LX_REL_DIR)/,$(LX_FILES))
 

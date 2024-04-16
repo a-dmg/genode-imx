@@ -1,0 +1,4 @@
+_/raw/drivers_nic-imx8mp_iot_gate
+_/raw/imx8mp_iot_gate-devices
+_/src/fec_nic_drv
+_/src/imx8mp_platform_drv

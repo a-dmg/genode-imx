@@ -7,6 +7,12 @@
 		<clock  name="i2c2_gate"/>
 	</device>
 
+	<device name="efuse" type="fsl,imx8mq-ocotp">
+		<io_mem   address="0x30350000" size="0x10000"/>
+		<clock name="ipg_clk_root"
+		       parent="ahb_clk_root"/>
+	</device>
+
 	<device name="dcss" type="nxp,imx8mq-dcss">
 		<io_mem address="0x32e00000" size="0x2d000"/>
 		<io_mem address="0x32e2f000" size="0x1000"/>

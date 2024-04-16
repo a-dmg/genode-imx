@@ -32,6 +32,44 @@ Bootstrap::Platform::Board::Board()
 	::Board::Pic pic { };
 
 	static volatile unsigned long iomux_values[][2] {
+
+		/* IOMUXC pin control for ENET */
+		{ 0x30330054, 0x0  }, /* ENET_MDC set ALT 0 - ENET1_MDC */
+		{ 0x30330058, 0x0  }, /* ENET_MDIO set ALT 0 - ENET1_MDIO */
+		{ 0x3033057C, 0x0  }, /* ENET1_MDIO_SELECT_INPUT - ENET_MDIO_ALT 0*/
+		{ 0x3033005C, 0x0  }, /* ENET_TD3 set ALT 0 - ENET1_RGMMI_TD3 */
+		{ 0x30330060, 0x0  }, /* ENET_TD2 set ALT 0 - ENET1_RGMII_TD2 */
+		{ 0x30330064, 0x0  }, /* ENET_TD1 set ALT 0 - ENET1_TD1 */
+		{ 0x30330068, 0x0  }, /* ENET_TD0 set ALT 0 - ENET1_RGMII_TD1 */
+		{ 0x3033006C, 0x0  }, /* ENET_TX_CTL set ALT 0 - ENET1_TX_CTL */
+		{ 0x30330070, 0x0  }, /* ENET_TXC set ALT 0 - ENET1_RGMII_TXC */
+		{ 0x30330074, 0x0  }, /* ENET_RX_CTL set ALT 0 - ENET1_RX_CTL */
+		{ 0x30330078, 0x0  }, /* ENET_RXC set ALT 0 - ENET1_RGMII_RXC */
+		{ 0x3033007C, 0x0  }, /* ENET_RD0 set ALT 0 - ENET1_RGMII_RD0 */
+		{ 0x30330080, 0x0  }, /* ENET_RD1 set ALT 0 - ENET1_RGMII_RD1 */
+		{ 0x30330084, 0x0  }, /* ENET_RD2 set ALT 0 - ENET1_RGMII_RD2 */
+		{ 0x30330088, 0x0  }, /* ENET_RD3 set ALT 0 - ENET1_RGMII_RD3 */
+
+		/* IOMUXC pad control for ENET */
+		{ 0x303302B4, 0x2  }, /* ENET_MDC */
+		{ 0x303302B8, 0x2  }, /* ENET_MDIO */
+		{ 0x303302BC, 0x16 }, /* ENET_TD3 */
+		{ 0x303302C0, 0x16 }, /* ENET_TD2 */
+		{ 0x303302C4, 0x16 }, /* ENET_TD1 */
+		{ 0x303302C8, 0x16 }, /* ENET_TD0 */
+		{ 0x303302CC, 0x16 }, /* ENET_TX_CTL */
+		{ 0x303302D0, 0x16 }, /* ENET_TXC */
+		{ 0x303302D4, 0x90 }, /* ENET_RX_CTL */
+		{ 0x303302D8, 0x90 }, /* ENET_RXC */
+		{ 0x303302DC, 0x90 }, /* ENET_RD0 */
+		{ 0x303302E0, 0x90 }, /* ENET_RD1 */
+		{ 0x303302E4, 0x90 }, /* ENET_RD2 */
+		{ 0x303302E8, 0x90 }, /* ENET_RD3 */
+
+		/* Fec PHY */
+		{ 0x303301A8, 0x5 }, /* SAI2_TXFS MUX GPIO4_IO24*/
+		{ 0x30330408, 0x10 }, /* SAI2 PAD */
+
 	};
 
 	unsigned num_values = sizeof(iomux_values) / (2*sizeof(unsigned long));

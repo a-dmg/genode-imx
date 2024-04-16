@@ -1,2 +1,37 @@
 <devices>
+	<device name="fec" type="fsl,imx8mp-fec">
+		<io_mem   address="0x30be0000" size="0x10000"/>
+		<irq      number="150"/>
+		<irq      number="151"/>
+		<irq      number="152"/>
+		<irq      number="153"/>
+		<property name="mii" value="rgmii-id"/>
+		<clock name="enet_axi_clk_root"
+		       parent="system_pll1_div3"/>
+		<clock name="enet_timer_clk_root"
+		       rate="100000000"
+		       parent="system_pll2_div10"
+		       driver_name="ptp"/>
+		<clock name="enet_ref_clk_root"
+		       parent="system_pll2_div8"
+		       rate="125000000"
+		       driver_name="enet_clk_ref"/>
+		<clock name="enet_phy_ref_clk_root"
+		       parent="system_pll2_div20"
+		       driver_name="enet_out"/>
+		<clock name="enet1_gate" driver_name="ipg"/>
+		<clock name="enet1_gate" driver_name="ahb"/>
+	</device>
+
+	<device name="efuse" type="fsl,imx8mp-ocotp">
+		<io_mem   address="0x30350000" size="0x10000"/>
+		<clock name="ipg_clk_root"
+		       parent="ahb_clk_root"/>
+	</device>
+
+	<device name="gpio4">
+		<io_mem address="0x30230000" size="0x10000"/>
+		<irq number="102"/>
+		<irq number="103"/>
+	</device>
 </devices>

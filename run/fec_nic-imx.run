@@ -1,0 +1,129 @@
+assert_spec arm_v8a
+
+create_boot_directory
+
+proc imx_variant {} {
+	set device_type [board]
+	regexp {(imx[0-9]m?[pq])_(.*)} [board] all variant model
+	if { $variant == "imx8q" } { set variant "imx8mq" }
+	return $variant
+}
+
+proc config_gpio_drv {} {
+	if { [board] == "imx8mp_iot_gate"} {
+		return { <config> <gpio num="24"  mode="O" value="1"/> </config> }
+	} else {
+		return { <config/> }
+	}
+}
+
+set depot_archives   { }
+
+lappend depot_archives [depot_user]/src/[base_src]
+lappend depot_archives [depot_user]/src/init
+lappend depot_archives [depot_user]/src/nic_router
+lappend depot_archives [depot_user]/src/imx_gpio_drv
+lappend depot_archives [depot_user]/raw/[board]-devices
+
+if {[get_cmd_switch --autopilot]} {
+	lappend depot_archives [depot_user]/pkg/drivers_nic-[board]
+} else {
+	build {
+		drivers/nic/fec
+		drivers/platform
+	}
+}
+
+import_from_depot $depot_archives
+
+install_config {
+<config verbose="yes">
+	<parent-provides>
+		<service name="ROM"/>
+		<service name="IRQ"/>
+		<service name="IO_MEM"/>
+		<service name="IO_PORT"/>
+		<service name="PD"/>
+		<service name="RM"/>
+		<service name="CPU"/>
+		<service name="LOG"/>
+	</parent-provides>
+
+	<default-route>
+		<any-service> <parent/> <any-child/> </any-service>
+	</default-route>
+
+	<default caps="100"/>
+
+	<start name="timer">
+		<resource name="RAM" quantum="1M"/>
+		<provides><service name="Timer"/></provides>
+	</start>
+
+	<start name="platform_drv" caps="150" managing_system="yes">
+		<binary name="} [imx_variant] {_platform_drv"/>
+		<resource name="RAM" quantum="4M"/>
+		<provides> <service name="Platform"/> </provides>
+		<config verbose="no">
+			<policy label="fec_nic_drv -> " info="yes">
+				<device name="fec"/>
+				<device name="efuse"/>
+			</policy>
+			<policy label="imx_gpio_drv -> " info="yes">
+				<device name="gpio4"/>
+			</policy>
+		</config>
+		<route> <any-service> <parent/> </any-service> </route>
+	</start>
+
+	<start name="fec_nic_drv" caps="150">
+		<resource name="RAM" quantum="20M"/>
+		<route>
+			<service name="ROM" label="nic_drv.dtb"> <parent label="fec_nic_drv-} [board] {.dtb"/> </service>
+			<service name="Uplink"> <child name="nic_router"/> </service>
+			<service name="Platform"> <child name="platform_drv"/> </service>
+			<service name="Timer"> <child name="timer"/> </service>
+			<any-service> <parent/> </any-service>
+		</route>
+	</start>
+
+	<start name="imx_gpio_drv" caps="150">
+		<resource name="RAM" quantum="8M"/>
+		<provides>
+			<service name="Gpio"/>
+		</provides>
+		} [config_gpio_drv] {
+		<route>
+			<service name="Platform"> <child name="platform_drv"/> </service>
+			<service name="Timer"> <child name="timer"/> </service>
+			<any-service> <parent/> </any-service>
+		</route>
+	</start>
+
+	<start name="nic_router" caps="150">
+		<resource name="RAM" quantum="8M"/>
+		<provides>
+			<service name="Nic"/>
+			<service name="Uplink"/>
+		</provides>
+		<config verbose="yes" verbose_domain_state="yes" dhcp_discover_timeout_sec="10" dhcp_request_timeout_sec="6">
+
+			<domain name="uplink" verbose_packets="yes" verbose_packet_drop="yes" icmp_echo_server="yes">
+			</domain>
+
+			<policy label="fec_nic_drv -> eth0" domain="uplink"/>
+		</config>
+	</start>
+
+</config>
+}
+
+build_boot_image [build_artifacts]
+
+
+if {[get_cmd_switch --autopilot]} {
+	run_genode_until {.*dynamic IP config: interface.*\n} 60
+} else {
+	run_genode_until forever
+}
+
