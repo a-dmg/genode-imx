@@ -1,6 +1,6 @@
 _/raw/imx8q_evk-devices
 _/src/event_filter
-_/src/fec_nic_drv
+_/src/fec_nic_drv_legacy
 _/src/imx8mq_driver_manager
 _/src/imx8mq_fb_drv
 _/src/imx8mq_platform_drv

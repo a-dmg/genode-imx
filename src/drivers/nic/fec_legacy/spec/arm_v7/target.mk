@@ -19,5 +19,5 @@ CC_OPT_arch/arm/lib/findbit      += -include asm/unified.h
 CC_OPT_arch/arm/lib/csumpartial  += -include asm/unified.h
 CC_OPT_arch/arm/lib/div64        += -include asm/unified.h
 
-include $(REP_DIR)/src/drivers/nic/fec/target.inc
+include $(REP_DIR)/src/drivers/nic/fec_legacy/target.inc
 include $(REP_DIR)/src/drivers/linux_mnt_reform2_drv_target_arm_v7.inc

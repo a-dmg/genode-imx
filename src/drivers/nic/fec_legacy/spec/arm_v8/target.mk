@@ -8,5 +8,5 @@ DTS_EXTRACT(mnt_reform2) := --select fec1
 DTS_PATH(imx8q_evk)      := arch/arm64/boot/dts/freescale/imx8mq-evk.dts
 DTS_EXTRACT(imx8q_evk)   := --select fec1
 
-include $(REP_DIR)/src/drivers/nic/fec/target.inc
+include $(REP_DIR)/src/drivers/nic/fec_legacy/target.inc
 include $(REP_DIR)/src/drivers/linux_mnt_reform2_drv_target_arm_v8.inc
