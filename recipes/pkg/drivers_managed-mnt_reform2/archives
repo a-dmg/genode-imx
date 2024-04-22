@@ -8,7 +8,7 @@ _/src/imx8mq_i2c_drv
 _/src/imx8mq_pci_host_drv
 _/src/imx8mq_platform_drv
 _/src/imx8mq_pwm_drv
-_/src/imx8mq_sd_card_drv
+_/src/imx8mq_sd_card_drv_legacy
 _/src/imx8mq_usb_host_drv
 _/src/nvme_drv
 _/src/rom_filter

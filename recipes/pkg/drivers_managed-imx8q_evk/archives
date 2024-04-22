@@ -4,7 +4,7 @@ _/src/fec_nic_drv_legacy
 _/src/imx8mq_driver_manager
 _/src/imx8mq_fb_drv
 _/src/imx8mq_platform_drv
-_/src/imx8mq_sd_card_drv
+_/src/imx8mq_sd_card_drv_legacy
 _/src/imx8mq_usb_host_drv
 _/src/rom_filter
 _/src/rom_reporter

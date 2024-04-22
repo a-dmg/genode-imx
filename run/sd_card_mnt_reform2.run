@@ -3,7 +3,7 @@ assert_spec arm_v8a
 create_boot_directory
 import_from_depot [depot_user]/src/[base_src] \
                   [depot_user]/src/imx8mq_platform_drv \
-                  [depot_user]/src/imx8mq_sd_card_drv \
+                  [depot_user]/src/imx8mq_sd_card_drv_legacy \
                   [depot_user]/src/init \
                   [depot_user]/src/report_rom \
                   [depot_user]/raw/mnt_reform2-devices
@@ -52,7 +52,7 @@ install_config {
 	</start>
 
 	<start name="sd_card_drv" caps="300">
-		<binary name="imx8mq_sd_card_drv"/>
+		<binary name="imx8mq_sd_card_drv_legacy"/>
 		<resource name="RAM" quantum="16M"/>
 		<provides><service name="Block"/></provides>
 		<config report="yes">
@@ -60,7 +60,7 @@ install_config {
 		</config>
 		<route>
 			<service name="ROM" label="dtb">
-				<parent label="imx8mq_sd_card_drv-mnt_reform2.dtb"/>
+				<parent label="imx8mq_sd_card_drv_legacy-mnt_reform2.dtb"/>
 			</service>
 			<service name="ROM"> <parent/> </service>
 			<service name="PD">  <parent/> </service>

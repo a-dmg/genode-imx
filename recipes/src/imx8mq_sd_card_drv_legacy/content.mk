@@ -1,4 +1,4 @@
-DRIVER := sd_card/imx8mq
+DRIVER := sd_card_legacy/imx8mq
 
 MIRROR_FROM_OS_DIR := src/lib/genode_c_api/block.cc
 

@@ -126,7 +126,7 @@ struct Driver_manager::Sd_card_driver : Device_driver
 	void generate_start_node(Xml_generator &xml) const override
 	{
 		xml.node("start", [&] () {
-			_gen_common_start_node_content(xml, "sd_card_drv", "imx8mq_sd_card_drv",
+			_gen_common_start_node_content(xml, "sd_card_drv", "imx8mq_sd_card_drv_legacy",
 			                               Ram_quota{16*1024*1024}, Cap_quota{300},
 			                               Priority{0}, Version{0});
 			_gen_provides_node<Block::Session>(xml);

@@ -243,7 +243,7 @@
 			<service name="Report" label="nvme_ns"> <child name="report_rom"/> </service>
 			<service name="Report" label="state"> <child name="report_rom"/> </service>
 			<service name="ROM" label="config"> <child name="report_rom"/> </service>
-			<service name="ROM" label="sd_card_drv -> dtb"> <parent label="imx8mq_sd_card_drv-imx8q_evk.dtb"/> </service>
+			<service name="ROM" label="sd_card_drv -> dtb"> <parent label="imx8mq_sd_card_drv_legacy-imx8q_evk.dtb"/> </service>
 			<service name="LOG">     <parent/> </service>
 			<service name="PD">      <parent/> </service>
 			<service name="RM">      <parent/> </service>
