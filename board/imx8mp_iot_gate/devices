@@ -29,9 +29,42 @@
 		       parent="ahb_clk_root"/>
 	</device>
 
+	<device name="gpio1">
+		<io_mem address="0x30200000" size="0x10000"/>
+		<irq number="96"/>
+		<irq number="97"/>
+	</device>
+
 	<device name="gpio4">
 		<io_mem address="0x30230000" size="0x10000"/>
 		<irq number="102"/>
 		<irq number="103"/>
 	</device>
+
+	<device name="usdhc2" type="fsl,imx8mp-usdhc">
+		<io_mem address="0x30b50000" size="0x10000"/>
+		<irq    number="55"/>
+		<clock  name="ipg_clk_root"
+		        driver_name="ipg"/>
+		<clock  name="nand_usdhc_bus_clk_root"
+		        driver_name="ahb"/>
+		<clock  name="usdhc2_clk_root"
+		        parent="system_pll1_clk"
+		        rate="20000000"
+		        driver_name="per"/>
+	</device>
+
+	<device name="usdhc3" type="fsl,imx8mp-usdhc">
+		<io_mem address="0x30b60000" size="0x10000"/>
+		<irq    number="56"/>
+		<clock  name="ipg_clk_root"
+		        driver_name="ipg"/>
+		<clock  name="nand_usdhc_bus_clk_root"
+		        driver_name="ahb"/>
+		<clock  name="usdhc3_clk_root"
+		        parent="system_pll1_clk"
+		        rate="400000000"
+		        driver_name="per"/>
+	</device>
+
 </devices>

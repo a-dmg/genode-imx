@@ -468,7 +468,6 @@ Driver::Ccm::Ccm(Genode::Env       &env,
 	video_pll_clk.disable();
 	gpu_pll_clk.disable();
 	vpu_pll_clk.disable();
-	system_pll3_clk.disable();
 
 	/* turn off all unnecessary root clocks */
 	arm_m7_clk_root.disable();
@@ -481,7 +480,6 @@ Driver::Ccm::Ccm(Genode::Env       &env,
 	media_isp_clk_root.disable();
 	main_axi_clk_root.disable();
 	enet_axi_clk_root.disable();
-	nand_usdhc_bus_clk_root.disable();
 	vpu_bus_clk_root.disable();
 	media_axi_clk_root.disable();
 	media_apb_clk_root.disable();
@@ -547,7 +545,6 @@ Driver::Ccm::Ccm(Genode::Env       &env,
 	ipp_do_clko2.disable();
 	hdmi_fdcc_tst_clk_root.disable();
 	hdmi_ref_266m_clk_root.disable();
-	usdhc3_clk_root.disable();
 	media_cam1_pix_clk_root.disable();
 	media_mipi_phy1_ref_clk_root.disable();
 	media_disp1_pix_clk_root.disable();

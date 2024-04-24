@@ -1,0 +1,161 @@
+assert_spec arm_v8a
+
+create_boot_directory
+
+proc imx_variant {} {
+	set device_type [board]
+	regexp {(imx[0-9]m?[pq])_(.*)} [board] all variant model
+	if { $variant == "imx8q" } { set variant "imx8mq" }
+	return $variant
+}
+
+proc config_gpio_drv {} {
+	if { [board] == "imx8mp_iot_gate"} {
+		return {
+			<config> <gpio num="4"  mode="O" value="1"/> </config> }
+	} else {
+		return { <config/> }
+	}
+}
+
+set depot_archives   { }
+
+lappend depot_archives [depot_user]/src/[base_src]
+lappend depot_archives [depot_user]/src/init
+lappend depot_archives [depot_user]/src/report_rom
+lappend depot_archives [depot_user]/src/nic_router
+lappend depot_archives [depot_user]/src/imx_gpio_drv
+lappend depot_archives [depot_user]/raw/[board]-devices
+
+if {[get_cmd_switch --autopilot]} {
+	lappend depot_archives [depot_user]/src/block_tester
+	lappend depot_archives [depot_user]/src/imx_sd_card_drv
+	lappend depot_archives [depot_user]/src/[imx_variant]_platform_drv
+} else {
+	build {
+		drivers/sd_card/spec/arm_v8
+		drivers/platform
+		app/block_tester
+	}
+}
+
+import_from_depot $depot_archives
+
+install_config {
+<config verbose="yes">
+	<parent-provides>
+		<service name="ROM"/>
+		<service name="IRQ"/>
+		<service name="IO_MEM"/>
+		<service name="IO_PORT"/>
+		<service name="PD"/>
+		<service name="RM"/>
+		<service name="CPU"/>
+		<service name="LOG"/>
+	</parent-provides>
+
+	<default-route>
+		<any-service> <parent/> <any-child/> </any-service>
+	</default-route>
+
+	<default caps="100"/>
+
+	<start name="timer">
+		<resource name="RAM" quantum="1M"/>
+		<provides><service name="Timer"/></provides>
+	</start>
+
+	<start name="report_rom" caps="100">
+		<resource name="RAM" quantum="4M"/>
+		<provides>
+			<service name="Report"/>
+			<service name="ROM"/>
+		</provides>
+		<config verbose="yes">
+		</config>
+		<route>
+			<service name="CPU"> <parent/> </service>
+			<service name="LOG"> <parent/> </service>
+			<service name="PD"> <parent/> </service>
+			<service name="RAM"> <parent/> </service>
+			<service name="ROM"> <parent/> </service>
+		</route>
+	</start>
+
+	<start name="platform_drv" caps="150" managing_system="yes">
+		<binary name="} [imx_variant] {_platform_drv"/>
+		<resource name="RAM" quantum="4M"/>
+		<provides> <service name="Platform"/> </provides>
+		<config verbose="no">
+			<policy label="imx_sd_card_drv -> " info="yes">
+				<device name="usdhc2"/>
+				<device name="usdhc3"/>
+			</policy>
+			<policy label="imx_gpio_drv -> " info="yes">
+				<device name="gpio1"/>
+			</policy>
+		</config>
+		<route> <any-service> <parent/> </any-service> </route>
+	</start>
+
+	<start name="imx_gpio_drv" caps="150">
+		<resource name="RAM" quantum="8M"/>
+		<provides>
+			<service name="Gpio"/>
+		</provides>
+		} [config_gpio_drv] {
+		<route>
+			<service name="Platform"> <child name="platform_drv"/> </service>
+			<service name="Timer"> <child name="timer"/> </service>
+			<any-service> <parent/> </any-service>
+		</route>
+	</start>
+
+	<start name="imx_sd_card_drv" caps="1000">
+		<resource name="RAM" quantum="800M"/>
+		<provides><service name="Block"/></provides>
+		<config report="yes">
+			<default-policy device="mmcblk0"/>
+		</config>
+		<route>
+			<service name="Platform"> <child name="platform_drv"/> </service>
+			<service name="Timer"> <child name="timer"/> </service>
+			<service name="ROM" label_suffix="dtb"> <parent label="imx_sd_card_drv-} [board] {.dtb"/> </service>
+			<service name="Report"> <child name="report_rom"/> </service>
+			<any-service> <parent/> </any-service>
+		</route>
+	</start>
+
+	<start name="block_tester">
+		<resource name="RAM" quantum="64M" />
+		<config verbose="yes" report="no" log="yes" stop_on_error="no">
+			<tests>
+				<sequential length="1M" size="1M" io_buffer="8M" batch="1"/>
+				<sequential length="1M" write="yes" size="1M" io_buffer="8M" batch="1"/>
+				<sequential length="256M" size="1M" io_buffer="8M" batch="4"/>
+				<sequential start="2097152" write="yes" length="256M" size="1M" io_buffer="8M" batch="4"/>
+			</tests>
+		</config>
+		<route>
+			<service name="ROM"> <parent/> </service>
+			<service name="PD">  <parent/> </service>
+			<service name="RM">  <parent/> </service>
+			<service name="CPU"> <parent/> </service>
+			<service name="LOG"> <parent/> </service>
+			<service name="Block"> <child name="imx_sd_card_drv"/> </service>
+			<any-service> <any-child/> </any-service>
+		</route>
+	</start>
+
+</config>
+}
+
+build_boot_image [build_artifacts]
+
+
+if {[get_cmd_switch --autopilot]} {
+	run_genode_until {.*child \"block_tester\" exited with exit value 0.*\n} 90
+} else {
+	run_genode_until forever
+}
+

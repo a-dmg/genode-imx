@@ -70,6 +70,38 @@ Bootstrap::Platform::Board::Board()
 		{ 0x303301A8, 0x5 }, /* SAI2_TXFS MUX GPIO4_IO24*/
 		{ 0x30330408, 0x10 }, /* SAI2 PAD */
 
+		/* IOMUXC pin control for GPIO 1 */
+		{ 0x30330024, 0x0 },
+
+		/* IOMUXC pad control for GPIO 1 */
+		{ 0x30330284, 0xc1 },
+
+		/* IOMUXC pin control for usdhc 3 */
+		{ 0x30330124, 0x2 }, /* SW_MUX_CTL_PAD_NAND_WE_B - USDHC3_CLK */
+		{ 0x30330128, 0x2 }, /* SW_MUX_CTL_PAD_NAND_WP_B - USDHC3_CMD */
+		{ 0x30330108, 0x2 }, /* SW_MUX_CTL_PAD_NAND_DATA04 - USDHC3_DATA0 */
+		{ 0x3033010C, 0x2 }, /* SW_MUX_CTL_PAD_NAND_DATA05 - USDHC3_DATA1 */
+		{ 0x30330110, 0x2 }, /* SW_MUX_CTL_PAD_NAND_DATA06 - USDHC3_DATA2 */
+		{ 0x30330114, 0x2 }, /* SW_MUX_CTL_PAD_NAND_DATA07 - USDHC3_DATA3 */
+		{ 0x3033011C, 0x2 }, /* SW_MUX_CTL_PAD_NAND_RE_B - USDHC3_DATA4 */
+		{ 0x303300EC, 0x2 }, /* SW_MUX_CTL_PAD_NAND_CE2_B - USDHC3_DATA5 */
+		{ 0x303300F0, 0x2 }, /* SW_MUX_CTL_PAD_NAND_CE3_B - USDHC3_DATA6 */
+		{ 0x303300F4, 0x2 }, /* SW_MUX_CTL_PAD_NAND_CLE - USDHC3_DATA7 */
+		{ 0x303300E8, 0x2 }, /* SW_MUX_CTL_PAD_NAND_CE1_B - USDHC3_STROBE */
+		
+		/* IOMUXC pad control for usdhc 3 */
+		{ 0x30330384, 0x196 }, /* SW_MUX_CTL_PAD_NAND_WE_B */
+		{ 0x30330388, 0x1d6 }, /* SW_MUX_CTL_PAD_NAND_WP_B */
+		{ 0x30330368, 0x1d6 }, /* SW_MUX_CTL_PAD_NAND_DATA04 */
+		{ 0x3033036C, 0x1d6 }, /* SW_MUX_CTL_PAD_NAND_DATA05 */
+		{ 0x30330370, 0x1d6 }, /* SW_MUX_CTL_PAD_NAND_DATA06 */
+		{ 0x30330374, 0x1d6 }, /* SW_MUX_CTL_PAD_NAND_DATA07 */
+		{ 0x3033037C, 0x1d6 }, /* SW_MUX_CTL_PAD_NAND_RE_B */
+		{ 0x3033034C, 0x1d6 }, /* SW_MUX_CTL_PAD_NAND_CE2_B */
+		{ 0x30330350, 0x1d6 }, /* SW_MUX_CTL_PAD_NAND_CE3_B */
+		{ 0x30330354, 0x1d6 }, /* SW_MUX_CTL_PAD_NAND_CLE */
+		{ 0x30330348, 0x196 }, /* SW_MUX_CTL_PAD_NAND_CE1_B */
+
 	};
 
 	unsigned num_values = sizeof(iomux_values) / (2*sizeof(unsigned long));
