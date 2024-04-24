@@ -33,6 +33,7 @@ DIR(firmware) := firmware
 HASH_INPUT += $(REP_DIR)/patches/uboot-imx8mp_iot_gate-fix-top-ram-alignement-when-optee-is-absent.patch
 HASH_INPUT += $(REP_DIR)/patches/uboot-imx8mp_iot_gate-enable_spi_and_tpm.patch
 HASH_INPUT += $(REP_DIR)/patches/uboot-imx8mp_iot_gate-tpm_setup_platform_hierarchy.patch
+HASH_INPUT += $(REP_DIR)/patches/uboot-imx8mp_iot_gate-backport_tpm.patch
 
 PATCHES := patches/mkimage-imx8mp_iot_gate-mak-use-native-mkimage-from-sysroot.patch
 
@@ -44,3 +45,4 @@ default: firmware.file uboot.git meta-bsp-imx8mp.git
 	cd uboot && patch -p1 < $(REP_DIR)/patches/uboot-imx8mp_iot_gate-fix-top-ram-alignement-when-optee-is-absent.patch && cd ..
 	cd uboot && patch -p1 < $(REP_DIR)/patches/uboot-imx8mp_iot_gate-enable_spi_and_tpm.patch && cd ..
 	cd uboot && patch -p1 < $(REP_DIR)/patches/uboot-imx8mp_iot_gate-tpm_setup_platform_hierarchy.patch && cd ..
+	cd uboot && patch -p1 < $(REP_DIR)/patches/uboot-imx8mp_iot_gate-backport_tpm.patch && cd ..
