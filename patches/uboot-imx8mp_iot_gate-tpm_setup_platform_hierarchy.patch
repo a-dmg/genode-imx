@@ -1,0 +1,181 @@
+From 281e825c45f59ce1a0f97b1948d35ce406631ad3 Mon Sep 17 00:00:00 2001
+From: Pirmin Duss <pirmin.duss@gapfruit.com>
+Date: Mon, 27 Nov 2023 11:26:35 +0100
+Subject: [PATCH 2/2] TPM setup platform hierarchy
+
+---
+ board/compulab/iot-gate-imx8plus/Makefile     |  3 +
+ .../iot-gate-imx8plus/tpm_platform_hierarchy.c    | 83 +++++++++++++++++++
+ cmd/bootm.c                                   |  8 ++
+ 3 files changed, 94 insertions(+)
+ create mode 100644 board/compulab/iot-gate-imx8plus/tpm_platform_hierarchy.c
+
+diff --git a/board/compulab/iot-gate-imx8plus/Makefile b/board/compulab/iot-gate-imx8plus/Makefile
+index fa228294ef..5417df2710 100644
+--- a/board/compulab/iot-gate-imx8plus/Makefile
++++ b/board/compulab/iot-gate-imx8plus/Makefile
+@@ -13,5 +13,8 @@ else
+ obj-y += iot-gate-imx8plus.o
+ endif
+ 
++# initialize platform hirarchy in the TPM
++obj-y += tpm_platform_hierarchy.o
++
+ obj-y += ../plat/imx8mp/
+ obj-y += ../plat/imx8/
+diff --git a/board/compulab/iot-gate-imx8plus/tpm_platform_hierarchy.c b/board/compulab/iot-gate-imx8plus/tpm_platform_hierarchy.c
+new file mode 100644
+index 0000000000..c1bf236f95
+--- /dev/null
++++ b/board/compulab/iot-gate-imx8plus/tpm_platform_hierarchy.c
+@@ -0,0 +1,120 @@
++
++#include <command.h>
++#include <common.h>
++#include <dm.h>
++#include <dm/device.h>
++#include <init.h>
++#include <tpm-common.h>
++#include <tpm-v2.h>
++
++/* forward declaration of some command functions */
++extern int get_tpm(struct udevice **tpm);
++extern int tpm_set_device(unsigned long num);
++
++enum {
++	AUTH_TOKEN_OFFSET     = 0x1234,
++	AUTH_TOKEN_LENGTH     = 32,
++};
++
++static struct udevice *_tpm            = NULL;
++static void           *auth_token_addr = NULL;
++
++
++/*
++ * This will clear the key from memory so it is no longer
++ * accessible when the OS starts.
++ * This needs to be called shortly before the control is handed
++ * over to the OS (eg in the command `bootm`).
++ */
++void clear_tpm2_auth_token(void)
++{
++	memset(auth_token_addr, NULL, AUTH_TOKEN_LENGTH);
++}
++
++
++/*
++ * initialize the TPM and make it ready for use for
++ * further operations.
++ */
++int init_tpm()
++{
++	int res = 0;
++
++	res = get_tpm(&_tpm);
++	if (res != 0)
++		goto out;
++
++	res = tpm_init(_tpm);
++	if (res != 0)
++		goto out;
++
++	res = tpm2_startup(_tpm, TPM2_SU_CLEAR);
++	if (res != 0)
++		goto out;
++
++	res = tpm2_self_test(_tpm, TPMI_YES);
++	if (res != 0)
++		goto out;
++
++out:
++
++	if (res != 0) {
++		printf("ERROR: failed to initialize the TPM = 0x%x\n", res);
++	}
++
++	return res;
++}
++
++
++/*
++ * place the authentication token "near" the top of the RAM and
++ * remember the location so we can clear it when the OS gets started.
++ * The actual password is random to ensure it can't be guessed by
++ * the OS.
++ */
++int set_platform_auth_password()
++{
++	int res = 0;
++
++	auth_token_addr = (void*)(gd->ram_top - AUTH_TOKEN_OFFSET);
++	res = tpm2_get_random(_tpm, auth_token_addr, AUTH_TOKEN_LENGTH);
++	if (res != 0)
++		goto out;
++
++	res = tpm2_change_auth(_tpm, TPM2_RH_PLATFORM,
++	                       auth_token_addr, AUTH_TOKEN_LENGTH,
++	                       NULL, 0);
++	if (res != 0)
++		goto out;
++
++out:
++
++	if (res == 0) {
++		printf("TPM platform hierarchy password successfully set\n");
++	} else {
++		printf("ERROR: failed to set the TPM platform hierarchy password res = 0x%x\n", res);
++	}
++
++	return res;
++}
++
++
++/*
++ * This is activated by the config setting `LAST_STAGE_INIT`.
++ */
++int last_stage_init(void)
++{
++	int res = 0;
++
++	res = init_tpm();
++	if (res != 0)
++		goto out;
++
++	res = set_platform_auth_password();
++	if (res != 0)
++		goto out;
++
++out:
++
++	return res;
++}
+diff --git a/cmd/bootm.c b/cmd/bootm.c
+index 93604453f9..f6e00178c0 100644
+--- a/cmd/bootm.c
++++ b/cmd/bootm.c
+@@ -24,6 +24,11 @@
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+ 
++/* forward declartation used to clear the platform
++ * hierarchy password
++ */
++void clear_tpm2_auth_token(void);
++
+ #if defined(CONFIG_CMD_IMI)
+ static int image_info(unsigned long addr);
+ #endif
+@@ -93,6 +98,9 @@ static int do_bootm_subcommand(struct cmd_tbl *cmdtp, int flag, int argc,
+ 
+ int do_bootm(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
+ {
++	/* clear the platform hierarchy password from memory */
++	clear_tpm2_auth_token();
++
+ #ifdef CONFIG_NEEDS_MANUAL_RELOC
+ 	static int relocated = 0;
+ 
+-- 
+2.43.0
+
+
