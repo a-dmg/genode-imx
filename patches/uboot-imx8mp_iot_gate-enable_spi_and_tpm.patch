@@ -1,0 +1,117 @@
+diff --git a/arch/arm/dts/ucm-imx8m-plus.dtsi b/arch/arm/dts/ucm-imx8m-plus.dtsi
+index 8c2a31d4e8..d26324dfe4 100644
+--- a/arch/arm/dts/ucm-imx8m-plus.dtsi
++++ b/arch/arm/dts/ucm-imx8m-plus.dtsi
+@@ -274,3 +274,71 @@
+ 	fsl,ext-reset-output;
+ 	status = "okay";
+ };
++
++/ {
++	tpm_nreset: tpm-nreset {
++		compatible = "regulator-fixed";
++		regulator-name = "tpm-rst";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		gpio = <&gpio3 20 GPIO_ACTIVE_HIGH>;
++		regulator-always-on;
++		enable-active-high;
++	};
++};
++
++&ecspi2 {
++
++	#address-cells = <1>;
++	#size-cells = <0>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_ecspi2>;
++	cs-gpios = <&gpio5 13 GPIO_ACTIVE_LOW>;
++	status = "okay";
++
++	slb9670: slb9670-ecspi2@0 {
++		compatible = "infineon,slb9670", "tcg,tpm_tis-spi";
++		reg = <0>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_tpm_nrst>;
++		spi-max-frequency = <5000000>;
++		status = "okay";
++	};
++};
++
++&iomuxc {
++
++	pinctrl_tpm_nrst: tpmnrstgrp {
++		fsl,pins = <
++			MX8MP_IOMUXC_SAI5_RXC__GPIO3_IO20	0x19
++		>;
++	};
++
++	pinctrl_ecspi2: ecspi2grp {
++		fsl,pins = <
++			MX8MP_IOMUXC_ECSPI2_SCLK__ECSPI2_SCLK	0x82
++			MX8MP_IOMUXC_ECSPI2_MOSI__ECSPI2_MOSI	0x82
++			MX8MP_IOMUXC_ECSPI2_MISO__ECSPI2_MISO	0x82
++			MX8MP_IOMUXC_ECSPI2_SS0__GPIO5_IO13	0x40000
++		>;
++	};
++};
++
++&i2c5 {
++	status = "okay";
++
++	eeprom_m2: eeprom-i2c5@54 {
++		compatible = "atmel,24c08";
++		pagesize = <16>;
++		reg = <0x54>;
++		status = "okay";
++	};
++};
++
++&i2c6 {
++	status = "disabled";
++};
++
++&usdhc2 {
++	status = "disabled";
++};
+diff --git a/drivers/clk/imx/clk-imx8mp.c b/drivers/clk/imx/clk-imx8mp.c
+index c77500bcce..60b8b2e0b0 100644
+--- a/drivers/clk/imx/clk-imx8mp.c
++++ b/drivers/clk/imx/clk-imx8mp.c
+@@ -186,6 +186,19 @@ static const char *imx8mp_enet_phy_ref_sels[] = {"clock-osc-24m", "sys_pll2_50m"
+ 
+ static const char *imx8mp_dram_core_sels[] = {"dram_pll_out", "dram_alt_root", };
+ 
++#if CONFIG_IS_ENABLED(DM_SPI)
++static const char *imx8mp_ecspi1_sels[] = {"clock-osc-24m", "sys_pll2_200m", "sys_pll1_40m",
++                                          "sys_pll1_160m", "sys_pll1_800m", "sys_pll3_out",
++                                          "sys_pll2_250m", "audio_pll2_out", };
++
++static const char *imx8mp_ecspi2_sels[] = {"clock-osc-24m", "sys_pll2_200m", "sys_pll1_40m",
++                                          "sys_pll1_160m", "sys_pll1_800m", "sys_pll3_out",
++                                          "sys_pll2_250m", "audio_pll2_out", };
++
++static const char *imx8mp_ecspi3_sels[] = {"clock-osc-24m", "sys_pll2_200m", "sys_pll1_40m",
++                                          "sys_pll1_160m", "sys_pll1_800m", "sys_pll3_out",
++                                          "sys_pll2_250m", "audio_pll2_out", };
++#endif
+ 
+ static ulong imx8mp_clk_get_rate(struct clk *clk)
+ {
+@@ -397,6 +410,16 @@ static int imx8mp_clk_probe(struct udevice *dev)
+ 
+ 	clk_dm(IMX8MP_CLK_USDHC3_ROOT, imx_clk_gate4("usdhc3_root_clk", "usdhc3", base + 0x45e0, 0));
+ 
++#if CONFIG_IS_ENABLED(DM_SPI)
++	clk_dm(IMX8MP_CLK_ECSPI1, imx8m_clk_composite("ecspi1", imx8mp_ecspi1_sels, base + 0xb280));
++	clk_dm(IMX8MP_CLK_ECSPI2, imx8m_clk_composite("ecspi2", imx8mp_ecspi2_sels, base + 0xb300));
++	clk_dm(IMX8MP_CLK_ECSPI3, imx8m_clk_composite("ecspi3", imx8mp_ecspi3_sels, base + 0xc180));
++
++	clk_dm(IMX8MP_CLK_ECSPI1_ROOT, imx_clk_gate4("ecspi1_root_clk", "ecspi1", base + 0x4070, 0));
++	clk_dm(IMX8MP_CLK_ECSPI2_ROOT, imx_clk_gate4("ecspi2_root_clk", "ecspi2", base + 0x4080, 0));
++	clk_dm(IMX8MP_CLK_ECSPI3_ROOT, imx_clk_gate4("ecspi3_root_clk", "ecspi3", base + 0x4090, 0));
++#endif
++
+ 	return 0;
+ }
+ 

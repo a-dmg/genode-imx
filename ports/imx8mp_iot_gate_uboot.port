@@ -30,6 +30,9 @@ URL(firmware) := https://www.nxp.com/lgfiles/NMG/MAD/YOCTO/firmware-imx-$(VERSIO
 SHA(firmware) := 65f829a9e2597bffc58a680aaefa638122144a083633d1ae09b3aec1d9f8ab84
 DIR(firmware) := firmware
 
+HASH_INPUT += $(REP_DIR)/patches/uboot-imx8mp_iot_gate-fix-top-ram-alignement-when-optee-is-absent.patch
+HASH_INPUT += $(REP_DIR)/patches/uboot-imx8mp_iot_gate-enable_spi_and_tpm.patch
+
 PATCHES := patches/mkimage-imx8mp_iot_gate-mak-use-native-mkimage-from-sysroot.patch
 
 PATCH_OPT(patches/mkimage-imx8mp_iot_gate-mak-use-native-mkimage-from-sysroot.patch) := -p1 -d mkimage
@@ -38,3 +41,4 @@ default: firmware.file uboot.git meta-bsp-imx8mp.git
 	$(VERBOSE)rm -rf firmware; mkdir -p firmware; cd firmware; sh ../firmware-imx-$(VERSION).bin --auto-accept; cd ..
 	cd uboot; for p in ../meta_bsp_imx8mp/recipes-bsp/u-boot/compulab/2021.04/imx8mp/*.patch; do patch -p1 < $$p; done; cd ..
 	cd uboot; patch -p1 < $(REP_DIR)/patches/uboot-imx8mp_iot_gate-fix-top-ram-alignement-when-optee-is-absent.patch; cd ..
+	cd uboot; patch -p1 < $(REP_DIR)/patches/uboot-imx8mp_iot_gate-enable_spi_and_tpm.patch; cd ..

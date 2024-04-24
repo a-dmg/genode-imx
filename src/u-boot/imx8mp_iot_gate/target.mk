@@ -48,6 +48,7 @@ $(UBOOT_SPL_BIN):
 		$(META_BSP_DIR)/recipes-bsp/u-boot/compulab/2021.04/imx8mp/d1d8.cfg \
 		$(META_BSP_DIR)/recipes-bsp/u-boot/compulab/2021.04/imx8mp/d2d4.cfg \
 		$(REP_DIR)/src/u-boot/imx8mp_iot_gate/default_env_file.cfg \
+		$(REP_DIR)/src/u-boot/imx8mp_iot_gate/enable_tpm.cfg \
 		$(META_BSP_DIR)/recipes-bsp/u-boot/compulab/2021.04/imx8mp/iot-gate-imx8plus_defconfig
 	$(VERBOSE)$(MAKE) -C $(UBOOT_CONTRIB_DIR) O=$(PWD)/$(PRG_REL_DIR)/uboot \
 		$(CROSS_COMPILE_OPT) \
