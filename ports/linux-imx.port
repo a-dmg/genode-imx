@@ -10,15 +10,9 @@ URL(reform-debian-packages) := https://source.mnt.re/reform/reform-debian-packag
 REV(reform-debian-packages) := 13a7ab054c80f646e0c66f47b655e71fbd33d0cb
 DIR(reform-debian-packages) := reform
 
-PATCHES := patches/linux-compulab-imx8m-plus-add-DTS-Makefile-rule.patch
-PATCHES += patches/linux-compulab-imx8m-plus-add-build-configs.patch
-PATCHES += patches/linux-compulab-imx8m-plus-fix-dtb-build-errors.patch
-PATCHES += patches/linux-compulab-imx8m-plus-adapt-fec-dts.patch
+PATCHES += patches/linux-compulab-imx8m-plus.patch
 
-PATCH_OPT(patches/linux-compulab-imx8m-plus-add-DTS-Makefile-rule.patch) := -p1 -d linux-imx
-PATCH_OPT(patches/linux-compulab-imx8m-plus-add-build-configs.patch)     := -p1 -d linux-imx
-PATCH_OPT(patches/linux-compulab-imx8m-plus-fix-dtb-build-errors.patch)  := -p1 -d linux-imx
-PATCH_OPT(patches/linux-compulab-imx8m-plus-adapt-fec-dts.patch)         := -p1 -d linux-imx
+PATCH_OPT(patches/linux-compulab-imx8m-plus.patch) := -p1 -d linux-imx
 
 default: reform-debian-packages.git linux-imx.archive
 	cd linux-imx; for p in ../reform/linux/patches/*.patch; do patch -p1 < $$p; done; cd ..

@@ -37,11 +37,5 @@ kernel_config.tag: $(MAKEFILE_LIST)
 
 kernel_build.phony: kernel_config.tag
 	$(MSG_BUILD)Linux
-	## TODO: re-enable dtbs option, and fix issues with compulab dtb
-	## $(VERBOSE)$(MAKE) $(LX_MK_ARGS) dtbs Image Image.gz $(BUILD_OUTPUT_FILTER)
-	$(VERBOSE)$(MAKE) $(LX_MK_ARGS) Image Image.gz $(BUILD_OUTPUT_FILTER)
-	$(VERBOSE)$(MAKE) $(LX_MK_ARGS) compulab/iot-gate-imx8plus-m2tpm.dtb $(BUILD_OUTPUT_FILTER)
-	$(VERBOSE)$(MAKE) $(LX_MK_ARGS) freescale/imx8mq-evk.dtb $(BUILD_OUTPUT_FILTER)
-	$(VERBOSE)$(MAKE) $(LX_MK_ARGS) freescale/imx8mq-mnt-reform2.dtb $(BUILD_OUTPUT_FILTER)
-	$(VERBOSE)$(MAKE) $(LX_MK_ARGS) freescale/imx8mq-mnt-reform2-hdmi.dtb $(BUILD_OUTPUT_FILTER)
+	$(VERBOSE)$(MAKE) $(LX_MK_ARGS) dtbs Image Image.gz $(BUILD_OUTPUT_FILTER)
 
