@@ -11,8 +11,10 @@ REV(reform-debian-packages) := 13a7ab054c80f646e0c66f47b655e71fbd33d0cb
 DIR(reform-debian-packages) := reform
 
 PATCHES += patches/linux-compulab-imx8m-plus.patch
+PATCHES += patches/linux-compulab-imx8m-mini.patch
 
 PATCH_OPT(patches/linux-compulab-imx8m-plus.patch) := -p1 -d linux-imx
+PATCH_OPT(patches/linux-compulab-imx8m-mini.patch) := -p1 -d linux-imx
 
 default: reform-debian-packages.git linux-imx.archive
 	cd linux-imx; for p in ../reform/linux/patches/*.patch; do patch -p1 < $$p; done; cd ..
