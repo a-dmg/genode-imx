@@ -16,6 +16,15 @@
 #include <linux/printk.h>
 
 
+#include <linux/regulator/driver.h>
+
+struct regulator_dev * devm_regulator_register(struct device * dev,const struct regulator_desc * regulator_desc,const struct regulator_config * config)
+{
+	lx_emul_trace(__func__);
+	return NULL;
+}
+
+
 #include <linux/pinctrl/consumer.h>
 
 int pinctrl_pm_select_sleep_state(struct device * dev)

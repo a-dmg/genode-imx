@@ -26,6 +26,12 @@
 		<irq number="105"/>
 	</device>
 
+	<device name="efuse" type="fsl,imx8mq-ocotp">
+		<io_mem   address="0x30350000" size="0x10000"/>
+		<clock name="ipg_clk_root"
+		       parent="ahb_clk_root"/>
+	</device>
+
 	<device name="lcd" type="fsl,imx28-lcdif">
 		<io_mem address="0x30320000" size="0x10000"/>
 		<io_mem address="0x307f0000" size="0x3000"/>

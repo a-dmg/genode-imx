@@ -4,8 +4,9 @@ create_boot_directory
 
 proc imx_variant {} {
 	set device_type [board]
-	regexp {(imx[0-9]m?[pq])_(.*)} [board] all variant model
-	if { $variant == "imx8q" } { set variant "imx8mq" }
+	if { [board] == "mnt_reform2" } { return "imx8mq" }
+	regexp {(imx[0-9]m?[pqm])_(.*)} [board] all variant model
+	if { $variant == "imx8q" } { return "imx8mq" }
 	return $variant
 }
 

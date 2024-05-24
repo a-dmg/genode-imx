@@ -288,14 +288,6 @@ struct mux_control * devm_mux_control_get(struct device * dev,const char * mux_n
 }
 
 
-#include <linux/regulator/driver.h>
-
-struct regulator_dev * devm_regulator_register(struct device * dev,const struct regulator_desc * regulator_desc,const struct regulator_config * config)
-{
-	lx_emul_trace_and_stop(__func__);
-}
-
-
 extern int devtmpfs_create_node(struct device * dev);
 int devtmpfs_create_node(struct device * dev)
 {
