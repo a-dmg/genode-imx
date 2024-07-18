@@ -885,14 +885,6 @@ void show_state_filter(unsigned int state_filter)
 }
 
 
-#include <linux/siphash.h>
-
-u64 siphash_1u64(const u64 first,const siphash_key_t * key)
-{
-	lx_emul_trace_and_stop(__func__);
-}
-
-
 #include <linux/smp.h>
 
 void smp_call_function_many(const struct cpumask * mask,smp_call_func_t func,void * info,bool wait)
@@ -930,14 +922,6 @@ int suppress_printk;
 #include <linux/sysctl.h>
 
 const int sysctl_vals[] = {};
-
-
-#include <linux/task_work.h>
-
-int task_work_add(struct task_struct * task,struct callback_head * work,enum task_work_notify_mode notify)
-{
-	lx_emul_trace_and_stop(__func__);
-}
 
 
 #include <linux/task_work.h>
@@ -1004,6 +988,66 @@ void wake_q_add_safe(struct wake_q_head * head,struct task_struct * task)
 void run_posix_cpu_timers(void)
 {
 	lx_emul_trace(__func__);
+}
+
+#include <linux/amba/bus.h>
+
+struct bus_type amba_bustype;
+
+
+#include <linux/amba/bus.h>
+
+void amba_device_unregister(struct amba_device * dev)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+
+
+#include <linux/property.h>
+
+void device_remove_software_node(struct device * dev)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+
+
+#include <linux/property.h>
+
+int device_add_software_node(struct device * dev,const struct software_node * node)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+
+
+#include <linux/pci.h>
+
+int pcim_enable_device(struct pci_dev * pdev)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+
+
+#include <linux/clk.h>
+
+void clk_bulk_put_all(int num_clks,struct clk_bulk_data * clks)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+
+
+#include <linux/reset.h>
+
+void reset_control_put(struct reset_control * rstc)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+
+
+#include <linux/reset.h>
+
+struct reset_control * of_reset_control_array_get(struct device_node * np,bool shared,bool optional,bool acquired)
+{
+	lx_emul_trace_and_stop(__func__);
 }
 
 

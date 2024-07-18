@@ -8,6 +8,8 @@ SRC_CC   += main.cc
 SRC_CC   += lx_emul/random.cc
 SRC_CC   += lx_emul/shared_dma_buffer.cc
 
+SRC_C    += clk-imx8mp.c
+SRC_C    += pinctrl-imx8mp.c
 SRC_C    += dummies.c
 SRC_C    += lx_emul.c
 SRC_C    += lx_emul/shadow/drivers/base/power/runtime.c
@@ -20,6 +22,13 @@ CC_OPT_drivers/usb/host/xhci-trace += -I$(LX_CONTRIB_DIR)/drivers/usb/host
 
 CC_OPT_drivers/base/regmap/regmap   += -I$(LX_SRC_DIR)/drivers/base/regmap
 
+CC_OPT_clk-imx8mp   = -DKBUILD_MODFILE='"clk-imx8mp"'
+CC_OPT_clk-imx8mp  += -DKBUILD_BASENAME='"clk-imx8mp"'
+CC_OPT_clk-imx8mp  += -DKBUILD_MODNAME='"clk-imx8mp"'
+
+CC_OPT_pinctrl-imx8mp   = -DKBUILD_MODFILE='"pinctrl-imx8mp"'
+CC_OPT_pinctrl-imx8mp  += -DKBUILD_BASENAME='"pinctrl-imx8mp"'
+CC_OPT_pinctrl-imx8mp  += -DKBUILD_MODNAME='"pinctrl-imx8mp"'
 
 #
 # Genode C-API backends
@@ -30,8 +39,10 @@ SRC_CC  += genode_c_api/usb.cc
 vpath genode_c_api/usb.cc $(subst /genode_c_api,,$(call select_from_repositories,src/lib/genode_c_api))
 
 # Driver-specific device-tree binary data
-BOARDS                   := imx8q_evk mnt_reform2
+BOARDS                   := imx8q_evk mnt_reform2 imx8mp_iot_gate
 DTS_PATH(mnt_reform2)    := arch/arm64/boot/dts/freescale/imx8mq-mnt-reform2.dts
 DTS_EXTRACT(mnt_reform2) := --select usb_dwc3_0 --select usb_dwc3_1
 DTS_PATH(imx8q_evk)      := arch/arm64/boot/dts/freescale/imx8mq-evk.dts
 DTS_EXTRACT(imx8q_evk)   := --select usb_dwc3_0 --select usb_dwc3_1
+DTS_PATH(imx8mp_iot_gate)    := arch/arm64/boot/dts/compulab/iot-gate-imx8plus.dts
+DTS_EXTRACT(imx8mp_iot_gate) := --select usb_dwc3_0 --select usb_dwc3_1

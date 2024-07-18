@@ -14,6 +14,24 @@
 #include <lx_emul.h>
 
 
+#include <linux/siphash.h>
+
+u64 siphash_1u64(const u64 first,const siphash_key_t * key)
+{
+	lx_emul_trace(__func__);
+	return 0;
+}
+
+
+#include <linux/task_work.h>
+
+int task_work_add(struct task_struct * task,struct callback_head * work,enum task_work_notify_mode notify)
+{
+	lx_emul_trace(__func__);
+	return 0;
+}
+
+
 #include <linux/threads.h>
 unsigned long __per_cpu_offset[NR_CPUS] = { 0UL };
 

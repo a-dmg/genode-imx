@@ -59,6 +59,9 @@ drivers/usb/core/urb.c
 drivers/usb/core/usb.c
 drivers/usb/dwc3/core.c
 drivers/usb/dwc3/host.c
+drivers/usb/dwc3/dwc3-haps.c
+drivers/usb/dwc3/dwc3-of-simple.c
+drivers/usb/dwc3/dwc3-imx8mp.c
 drivers/usb/host/pci-quirks.c
 drivers/usb/host/xhci-dbg.c
 drivers/usb/host/xhci-ext-caps.c
