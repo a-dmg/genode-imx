@@ -108,6 +108,10 @@ static Genode::uint32_t iot_gate_pinctrl_setting [][MAX] {
 };
 
 
+static Genode::uint32_t phyboard_pollux_pinctrl_setting [][MAX] {
+};
+
+
 static Genode::uint32_t mnt_pocket_pinctrl_setting [][MAX] {
 	/* pinctrl_eqos */
 	{ 0x054, 0x2B4, 0x000, 0x0, 0x0, 0x20  },
@@ -598,6 +602,11 @@ struct Driver::Iomuxc : Genode::Attached_mmio<0x10000>
 		if (board == "imx8mp_armstone") {
 			_settings(armstone_pinctrl_setting,
 			          sizeof(armstone_pinctrl_setting) / (MAX*sizeof(uint32_t)));
+			return;
+		}
+		if (board == "imx8mp_phyboard_pollux") {
+			_settings(phyboard_pollux_pinctrl_setting,
+			          sizeof(phyboard_pollux_pinctrl_setting) / (MAX*sizeof(uint32_t)));
 			return;
 		}
 	}

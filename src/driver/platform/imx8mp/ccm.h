@@ -643,7 +643,7 @@ struct Driver::Ccm
 	                                           system_pll1_div10, system_pll2_div5,
 	                                           system_pll2_div10, system_pll3_clk,
 	                                           ext_clk_2, ext_clk_4,
-	                                           audio_pll2_clk };
+	                                           audio_pll2_clk, true };
 	Root_clock uart2_clk_root                { clocks, "uart2_clk_root",
 	                                           root_range(95), m24_ref_clk,
 	                                           system_pll1_div10, system_pll2_div5,
@@ -976,7 +976,7 @@ struct Driver::Ccm
 	Gate trace_gate       { clocks, "trace_gate",
 	                        gate_range(72),  trace_clk_root, true };
 	Gate uart1_gate       { clocks, "uart1_gate",
-	                        gate_range(73),  uart1_clk_root };
+	                        gate_range(73),  uart1_clk_root, true};
 	Gate uart2_gate       { clocks, "uart2_gate",
 	                        gate_range(74),  uart2_clk_root, true };
 	Gate uart3_gate       { clocks, "uart3_gate",

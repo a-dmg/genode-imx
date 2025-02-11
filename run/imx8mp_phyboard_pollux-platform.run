@@ -1,0 +1,46 @@
+assert {[have_board imx8mp_phyboard_pollux]}
+
+create_boot_directory
+import_from_depot [depot_user]/src/[base_src] \
+                  [depot_user]/src/imx8mp_platform \
+                  [depot_user]/src/init \
+                  [depot_user]/raw/imx8mp_phyboard_pollux-devices
+
+install_config {
+<config>
+	<parent-provides>
+		<service name="ROM"/>
+		<service name="IRQ"/>
+		<service name="IO_MEM"/>
+		<service name="PD"/>
+		<service name="RM"/> <service name="CPU"/>
+		<service name="LOG"/>
+	</parent-provides>
+	<default caps="100" ram="1M"/>
+
+	<start name="imx8mp_platform" ram="2M" managing_system="yes">
+		<provides><service name="Platform"/></provides>
+		<config verbose="yes" watchdog="wdog3"/>
+		<route>
+			<any-service> <parent/> </any-service>
+		</route>
+	</start>
+
+	<start name="timer">
+		<provides><service name="Timer"/></provides>
+		<route> <any-service> <parent/> </any-service> </route>
+	</start>
+
+</config>
+}
+
+set fd [open [run_dir]/genode/system w]
+puts $fd {
+<system state=""/> }
+close $fd
+
+build_boot_image [build_artifacts]
+
+run_genode_until forever
+
+# vi: set ft=tcl :
