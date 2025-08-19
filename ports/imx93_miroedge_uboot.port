@@ -1,0 +1,39 @@
+LICENSE   := GPLv2
+VERSION   := 1
+
+DOWNLOADS := uboot.git atf.git mkimage.git firmware-imx.file firmware-sentinel.file
+
+URL(uboot) := https://git.phytec.de/u-boot-imx
+DIR(uboot) := uboot
+REV(uboot) := v2024.04-2.2.0-phy9
+
+ATF_TAG = lf_v2.10
+URL(atf) := https://github.com/nxp-imx/imx-atf.git
+DIR(atf) := atf
+REV(atf) := $(ATF_TAG)
+
+FIRMWARE_IMX_VERSION = 8.26-d4c33ab
+URL(firmware-imx) := https://www.nxp.com/lgfiles/NMG/MAD/YOCTO/firmware-imx-$(FIRMWARE_IMX_VERSION).bin
+SHA(firmware-imx) := b2fcf84a0417678aa441b1bcde9ece467f8bd063a63d8390684f8e37768d84cf
+DIR(firmware-imx) := firmware-imx
+
+FIRMWARE_SENTINEL_VERSION = 0.11
+URL(firmware-sentinel) := https://www.nxp.com/lgfiles/NMG/MAD/YOCTO/firmware-sentinel-$(FIRMWARE_SENTINEL_VERSION).bin
+SHA(firmware-sentinel) := 269480417a8ae9aa4cc4101ab947287fc33455a931021dbdc4d9badb5212bceb
+DIR(firmware-sentinel) := firmware-sentinel
+
+MKIMAGE_BRANCH = lf-6.6.52-2.2.0
+URL(mkimage) := https://github.com/nxp-imx/imx-mkimage.git
+DIR(mkimage) := mkimage
+REV(mkimage) := $(MKIMAGE_BRANCH)
+
+#PATCHES := patches/uboot-imx8mp_phyboard_pollux-scripts_use_SWIG_Append.patch
+#PATCHES += patches/uboot-imx8mp_phyboard_pollux-imx8mp-phyboard-pollux-rdk.dts-add-tpm2.patch
+#
+#PATCH_OPT(patches/uboot-imx8mp_phyboard_pollux-scripts_use_SWIG_Append.patch) := -p1 -d uboot
+#PATCH_OPT(patches/uboot-imx8mp_phyboard_pollux-imx8mp-phyboard-pollux-rdk.dts-add-tpm2.patch) := -p1 -d uboot
+
+default: firmware-imx.file firmware-sentinel.file uboot.git
+	$(VERBOSE)rm -rf firmware-imx; mkdir -p firmware-imx; cd firmware-imx; sh ../firmware-imx-$(FIRMWARE_IMX_VERSION).bin --auto-accept; cd ..
+	$(VERBOSE)rm -rf firmware-sentinel; mkdir -p firmware-sentinel; cd firmware-sentinel; sh ../firmware-sentinel-$(FIRMWARE_SENTINEL_VERSION).bin --auto-accept; cd ..
+
