@@ -1,0 +1,114 @@
+
+# u-boot for imx93_phyboard_nash
+
+## Build targets
+
+u-boot is the bootloader used for this board, it actually consist
+of different boot stages and firmware assemble into a boot container,
+usually named 'imx-boot' or 'flash.bin'.
+
+A boot container usually consist of:
+ - ATF (arm trusted firmware)
+ - OP-TEE (optional: usually not provided)
+ - u-boot
+ - firmware for DDR training
+ - firmware for secure-element (firmware-ele)
+
+The boot container is put together at the last building stage either
+using mkimage or binman.
+
+u-boot for this board is provided as a port, the first step is to prepare
+the port using the Genode's build system:
+
+```bash
+prepare_port imx93_phyboard_nash_uboot
+```
+
+Different build configuration are provided in the 'spec/' subfolder:
+ - dev
+ - staging
+
+## dev configuration
+
+This build configuration is typically used by developer for fast development
+cycle and on CI/CD.
+
+First build the boot container, assuming you are in `genode/`:
+
+```bash
+make -C build/arm_v8a u-boot/imx93_phyboard_nash/spec/dev
+```
+
+The resulting image will be available here in the build directory
+`build/arm_v8a/u-boot/imx93_phyboard_nash/spec/dev/imx-boot`.
+
+### run with uuu
+
+First set the bootmode switch of the board to USB serial download:
+
+| ON |   |   |   |
+|----|---|---|---|
+| x  |   |   |   |
+|    | x | x | x |
+| 1  | 2 | 3 | 4 |
+
+You can now from your host use uuu [1] to upload the boot container to the
+device and run it, independently of what is install on the device's emmc/sd-card.
+
+[1]: https://github.com/nxp-imx/mfgtools
+
+```bash
+uuu -v -b spl build/arm_v8a/u-boot/imx93_phyboard_nash/spec/dev/imx-boot
+```
+
+When you will power the board on, it will now download the newly built boot-container,
+en run it. By default it will run `fastboot usb 0`. You can change this behavior by
+editing the `bootcmd_mfg` env variable in the default env `src/u-boot/imx93_phyboard_nash/spec/dev/dev.env`.
+Keep in mind, in this mode, the u-boot's ENV is not read from emmc, it is always loaded
+from nowhere, read u-boot documentation for more details.
+
+You can also access the u-boot shell via serial line by typing `CTRL+C`.
+
+### flash to emmc with uuu
+
+First set the boot-mode switch of the board to USB serial download:
+
+| ON |   |   |   |
+|----|---|---|---|
+| x  |   |   |   |
+|    | x | x | x |
+| 1  | 2 | 3 | 4 |
+
+You can now from your host use uuu [1] to upload the boot container to the
+device, it will be flashed to emmc.
+
+[1]: https://github.com/nxp-imx/mfgtools
+
+```bash
+uuu -v -b emmc build/arm_v8a/u-boot/imx93_phyboard_nash/spec/dev/imx-boot
+```
+
+Finally, set the boot-mode switch of the board to emmc:
+
+| ON |   |   |   |
+|----|---|---|---|
+|    | x |   |   |
+| x  |   | x | x |
+| 1  | 2 | 3 | 4 |
+
+## staging configuration
+
+This build configuration is typically used for pre-production and production
+environment. The major difference with the dev configuration is the expectation
+of a device with restrained access to the i/o serial console, with burned fused
+and locked state.
+
+## Epoch
+
+For build reproducibility, we set a fix epoch during the build process in
+`src/u-boot/imx93_phyboad_nash/epoch.env`. The epoch is typically updated
+after major change. The epoch is obtained with the following command
+
+```bash
+date +%s
+```
