@@ -1,0 +1,33 @@
+LICENSE   := GPLv2
+VERSION   := 1
+
+DOWNLOADS := uboot.git atf.git mkimage.git firmware.file firmware-ele.file
+
+URL(uboot) := https://git.phytec.de/u-boot-imx
+DIR(uboot) := uboot
+REV(uboot) := v2024.04-2.2.0-phy
+
+URL(mkimage) := https://github.com/nxp-imx/imx-mkimage.git
+DIR(mkimage) := mkimage
+REV(mkimage) := lf-6.6.52_2.2.0
+
+URL(atf) := https://github.com/nxp-imx/imx-atf.git
+DIR(atf) := atf
+REV(atf) := lf_v2.10
+
+FW_VERSION = 8.26-d4c33ab
+URL(firmware) := https://www.nxp.com/lgfiles/NMG/MAD/YOCTO/firmware-imx-$(FW_VERSION).bin
+SHA(firmware) := b2fcf84a0417678aa441b1bcde9ece467f8bd063a63d8390684f8e37768d84cf
+DIR(firmware) := firmware
+
+FW_ELE_VERSION = 1.3.0-17945fc
+URL(firmware-ele) := https://www.nxp.com/lgfiles/NMG/MAD/YOCTO/firmware-ele-imx-$(FW_ELE_VERSION).bin
+SHA(firmware-ele) := 8791109824767346237e53ac2c712824e54608e2092859161e6bb3e5385a7595
+DIR(firmware-ele) := firmware-ele
+
+PATCHES := patches/mkimage-imx93_phyboard_nash-iMX8M-soc.mak-use-native-mkimage-from-sysroot.patch
+PATCH_OPT(patches/mkimage-imx93_phyboard_nash-iMX8M-soc.mak-use-native-mkimage-from-sysroot.patch) := -p1 -d mkimage
+
+default: firmware.file firmware-ele.file uboot.git
+	$(VERBOSE)rm -rf firmware; mkdir -p firmware; cd firmware; sh ../firmware-imx-$(FW_VERSION).bin --auto-accept; cd ..
+	$(VERBOSE)rm -rf firmware-ele; mkdir -p firmware-ele; cd firmware-ele; sh ../firmware-ele-imx-$(FW_ELE_VERSION).bin --auto-accept; cd ..
