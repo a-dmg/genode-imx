@@ -90,17 +90,18 @@ $(UBOOT): $(ATF_BIN)
 	# Configure u-boot build directory
 	$(VERBOSE)mkdir -p $(PWD)/$(PRG_REL_DIR)/uboot
 	$(VERBOSE)ln -sf $(REP_DIR)/src/u-boot/$(BOARD)/$(UBOOT_DEFAULT_ENV) $(PWD)/$(PRG_REL_DIR)/uboot/default.env
+	$(VERBOSE)ln -sf $(REP_DIR)/src/u-boot/$(BOARD)/imx93-phycore-gapfruit_defconfig $(UBOOT_CONTRIB_DIR)/configs/
 	# Generate config
 	$(VERBOSE)$(MAKE) -C $(UBOOT_CONTRIB_DIR) O=$(PWD)/$(PRG_REL_DIR)/uboot \
 		$(CROSS_COMPILE_OPT) \
-		imx93-phycore_defconfig
+		imx93-phycore-gapfruit_defconfig
 	$(VERBOSE)$(UBOOT_CONTRIB_DIR)/scripts/kconfig/merge_config.sh -m -O $(PWD)/$(PRG_REL_DIR)/uboot $(PWD)/$(PRG_REL_DIR)/uboot/.config \
 		$(UBOOT_EXTRA_CONFIG)
 	$(VERBOSE)$(MAKE) -C $(UBOOT_CONTRIB_DIR) O=$(PWD)/$(PRG_REL_DIR)/uboot \
 		$(CROSS_COMPILE_OPT) \
 		oldconfig
 	# Build u-boot
-	$(VERBOSE)$(MAKE) -C $(UBOOT_CONTRIB_DIR) O=$(PWD)/$(PRG_REL_DIR)/uboot \
+	$(VERBOSE)$(UBOOT_BEAR) $(MAKE) -C $(UBOOT_CONTRIB_DIR) O=$(PWD)/$(PRG_REL_DIR)/uboot \
 		$(CROSS_COMPILE_OPT)
 
 ##
