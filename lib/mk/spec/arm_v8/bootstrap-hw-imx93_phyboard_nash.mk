@@ -4,7 +4,7 @@ REP_INC_DIR += src/bootstrap/board/imx93_phyboard_nash
 
 SRC_CC  += bootstrap/board/imx93_phyboard_nash/platform.cc
 SRC_CC  += bootstrap/spec/arm/gicv3.cc
-SRC_CC  += bootstrap/spec/arm_64/cortex_a53_mmu.cc
+SRC_CC  += bootstrap/spec/arm_64/cortex_a55_mmu.cc
 
 vpath bootstrap/% $(REP_DIR)/src
 
