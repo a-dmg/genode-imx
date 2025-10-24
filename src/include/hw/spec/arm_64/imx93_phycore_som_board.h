@@ -28,18 +28,18 @@ namespace Hw::Imx93_phycore_som_board {
 		UART_BASE  = 0x44380000, /* lpuart1 */
 		UART_SIZE  = 0x1000,
 		UART_CLOCK = 24000000,   /* NOTE: uboot=> clk dump */
-		BAUD_RATE  = 115200,     /* other values may require to extend the imx_lpuart driver */
+		BAUD_RATE  = 115200,     /* ATTENTION: other values may require to extend the imx_lpuart driver */
 	};
 
-	static constexpr Genode::size_t NR_OF_CPUS = 1; /* TODO: should be 2 */
+	static constexpr Genode::size_t NR_OF_CPUS = 2; /* TODO: should be 2 */
 
 	namespace Cpu_mmio {
 		enum {
-			IRQ_CONTROLLER_DISTR_BASE  = 0x38800000,
+			IRQ_CONTROLLER_DISTR_BASE  = 0x48000000,
 			IRQ_CONTROLLER_DISTR_SIZE  = 0x10000,
 			IRQ_CONTROLLER_VT_CPU_BASE = 0x38800000,
-			IRQ_CONTROLLER_VT_CPU_SIZE = 0x2000,
-			IRQ_CONTROLLER_REDIST_BASE = 0x38880000,
+			IRQ_CONTROLLER_VT_CPU_SIZE = 0xc000,
+			IRQ_CONTROLLER_REDIST_BASE = 0x48040000,
 			IRQ_CONTROLLER_REDIST_SIZE = 0xc0000,
 		};
 	};
