@@ -24,6 +24,7 @@ PATCHES += patches/linux-fus-dts.patch
 PATCHES += patches/linux-mnt-pocket-lt070me05000.patch
 PATCHES += patches/linux-mnt-pocket-samsung-dsim.patch
 PATCHES += patches/linux-imx8mp_qcacld2_wifi.patch
+PATCHES += patches/linux-imx93-phyboard-nash.patch
 
 PATCH_OPT(patches/linux-compulab-dts.patch)               := -p1 --directory=linux-imx
 PATCH_OPT(patches/linux-imx8mq-evk-enable-hdmi-dts.patch) := -p1 --directory=linux-imx
@@ -33,6 +34,7 @@ PATCH_OPT(patches/linux-fus-dts.patch)                    := -p1 --directory=lin
 PATCH_OPT(patches/linux-mnt-pocket-lt070me05000.patch)    := -p1 --directory=linux-imx
 PATCH_OPT(patches/linux-mnt-pocket-samsung-dsim.patch)    := -p1 --directory=linux-imx
 PATCH_OPT(patches/linux-imx8mp_qcacld2_wifi.patch)        := -p1 --directory=linux-imx
+PATCH_OPT(patches/linux-imx93-phyboard-nash.patch)        := -p1 --directory=linux-imx
 
 MNT_PATCHES := imx8mp-mnt-pocket-reform/2ghz/0001-imx8mp-2ghz-clk.patch \
                imx8mp-mnt-pocket-reform/2ghz/0002-imx8mp-2ghz-opp.patch \
