@@ -1,0 +1,4409 @@
+From 625f2b47349d43e78a93eb5eb5c7ad582e42c2f1 Mon Sep 17 00:00:00 2001
+From: Alice Domage <alice.domage@gapfruit.com>
+Date: Tue, 4 Nov 2025 17:46:15 +0100
+Subject: [PATCH] add imx93_phyboard support
+
+---
+ arch/arm64/boot/dts/freescale/Makefile        |    3 +-
+ .../freescale/imx93-phyboard-nash-jtag.dtso   |   36 +
+ .../imx93-phyboard-nash-peb-av-10.dtso        |  191 +++
+ .../imx93-phyboard-nash-peb-wlbt-07.dtso      |  120 ++
+ .../imx93-phyboard-nash-pwm-fan.dtso          |   38 +
+ .../freescale/imx93-phyboard-nash-vm016.dtso  |   81 ++
+ .../dts/freescale/imx93-phyboard-nash.dts     |  341 +++++
+ .../imx93-phyboard-segin-peb-av-02.dtso       |  144 ++
+ .../imx93-phyboard-segin-peb-eval-01.dtso     |   59 +
+ .../imx93-phyboard-segin-peb-wlbt-05.dtso     |  101 ++
+ .../dts/freescale/imx93-phyboard-segin.dts    |  339 +++++
+ .../dts/freescale/imx93-phycore-rpmsg.dtso    |   65 +
+ .../boot/dts/freescale/imx93-phycore-som.dtsi |  296 +++++
+ arch/arm64/boot/dts/freescale/imx93.dtsi      |  891 ++++++++++++-
+ arch/arm64/configs/imx9_phytec_defconfig      | 1176 +++++++++++++++++
+ include/dt-bindings/clock/imx93-clock.h       |    3 +-
+ 16 files changed, 3851 insertions(+), 33 deletions(-)
+ create mode 100644 arch/arm64/boot/dts/freescale/imx93-phyboard-nash-jtag.dtso
+ create mode 100644 arch/arm64/boot/dts/freescale/imx93-phyboard-nash-peb-av-10.dtso
+ create mode 100644 arch/arm64/boot/dts/freescale/imx93-phyboard-nash-peb-wlbt-07.dtso
+ create mode 100644 arch/arm64/boot/dts/freescale/imx93-phyboard-nash-pwm-fan.dtso
+ create mode 100644 arch/arm64/boot/dts/freescale/imx93-phyboard-nash-vm016.dtso
+ create mode 100644 arch/arm64/boot/dts/freescale/imx93-phyboard-nash.dts
+ create mode 100644 arch/arm64/boot/dts/freescale/imx93-phyboard-segin-peb-av-02.dtso
+ create mode 100644 arch/arm64/boot/dts/freescale/imx93-phyboard-segin-peb-eval-01.dtso
+ create mode 100644 arch/arm64/boot/dts/freescale/imx93-phyboard-segin-peb-wlbt-05.dtso
+ create mode 100644 arch/arm64/boot/dts/freescale/imx93-phyboard-segin.dts
+ create mode 100644 arch/arm64/boot/dts/freescale/imx93-phycore-rpmsg.dtso
+ create mode 100644 arch/arm64/boot/dts/freescale/imx93-phycore-som.dtsi
+ create mode 100644 arch/arm64/configs/imx9_phytec_defconfig
+
+diff --git a/arch/arm64/boot/dts/freescale/Makefile b/arch/arm64/boot/dts/freescale/Makefile
+index db55a3293..642a28242 100644
+--- a/arch/arm64/boot/dts/freescale/Makefile
++++ b/arch/arm64/boot/dts/freescale/Makefile
+@@ -149,7 +149,8 @@ dtb-$(CONFIG_ARCH_MXC) += imx8qxp-colibri-iris-v2.dtb
+ dtb-$(CONFIG_ARCH_MXC) += imx8qxp-mek.dtb
+ dtb-$(CONFIG_ARCH_MXC) += imx8ulp-evk.dtb
+ dtb-$(CONFIG_ARCH_MXC) += imx93-11x11-evk.dtb
+-dtb-$(CONFIG_ARCH_MXC) += imx93-tqma9352-mba93xxla.dtb
++dtb-$(CONFIG_ARCH_MXC) += imx93-phyboard-nash.dtb
++dtb-$(CONFIG_ARCH_MXC) += imx93-phyboard-segin.dtb
+ 
+ imx8mm-venice-gw72xx-0x-imx219-dtbs	:= imx8mm-venice-gw72xx-0x.dtb imx8mm-venice-gw72xx-0x-imx219.dtbo
+ imx8mm-venice-gw72xx-0x-rpidsi-dtbs	:= imx8mm-venice-gw72xx-0x.dtb imx8mm-venice-gw72xx-0x-rpidsi.dtbo
+diff --git a/arch/arm64/boot/dts/freescale/imx93-phyboard-nash-jtag.dtso b/arch/arm64/boot/dts/freescale/imx93-phyboard-nash-jtag.dtso
+new file mode 100644
+index 000000000..64dc71be9
+--- /dev/null
++++ b/arch/arm64/boot/dts/freescale/imx93-phyboard-nash-jtag.dtso
+@@ -0,0 +1,36 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2024 PHYTEC Messtechnik GmbH
++ * Author: Primoz Fiser <primoz.fiser@norik.com>
++ */
++
++#include "imx93-pinfunc.h"
++
++/dts-v1/;
++/plugin/;
++
++/ {
++	compatible = "phytec,imx93-phyboard-nash";
++};
++
++/*
++ * NOTE: We add pinctrl_jtag here to imx93_soc node. However this could be any
++ * arbitrary node that is enabled and has a driver bound to it. This is needed
++ * since jtag doesn't have any driver associated with it and is thus hard to
++ * apply the correct pinmuxing from the DT otherwise.
++ */
++&imx93_soc {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_jtag>;
++};
++
++&iomuxc {
++	pinctrl_jtag: jtaggrp {
++		fsl,pins = <
++			MX93_PAD_GPIO_IO24__JTAG_MUX_TDO		0x31e
++			MX93_PAD_GPIO_IO25__JTAG_MUX_TCK		0x31e
++			MX93_PAD_GPIO_IO26__JTAG_MUX_TDI		0x31e
++			MX93_PAD_GPIO_IO27__JTAG_MUX_TMS		0x31e
++		>;
++	};
++};
+diff --git a/arch/arm64/boot/dts/freescale/imx93-phyboard-nash-peb-av-10.dtso b/arch/arm64/boot/dts/freescale/imx93-phyboard-nash-peb-av-10.dtso
+new file mode 100644
+index 000000000..ac92fe360
+--- /dev/null
++++ b/arch/arm64/boot/dts/freescale/imx93-phyboard-nash-peb-av-10.dtso
+@@ -0,0 +1,191 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2024 PHYTEC Messtechnik GmbH
++ * Author: Primoz Fiser <primoz.fiser@norik.com>
++ */
++
++#include <dt-bindings/clock/imx93-clock.h>
++#include <dt-bindings/gpio/gpio.h>
++#include "imx93-pinfunc.h"
++
++/dts-v1/;
++/plugin/;
++
++/ {
++	compatible = "phytec,imx93-phyboard-nash";
++};
++
++&{/} {
++	backlight: backlight {
++		compatible = "pwm-backlight";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_backlight>;
++		brightness-levels= <0 4 8 16 32 64 128 255>;
++		default-brightness-level = <6>;
++		enable-gpios = <&gpio2 7 GPIO_ACTIVE_LOW>;
++		power-supply = <&reg_vcc_3v3>;
++		pwms = <&tpm5 2 50000 0>;
++	};
++
++	panel {
++		compatible = "edt,etml1010g3dra";
++		backlight = <&backlight>;
++		power-supply = <&reg_vcc_3v3>;
++
++		port {
++			panel_in: endpoint {
++				remote-endpoint = <&lvds_out>;
++			};
++		};
++	};
++
++	reg_sound_1v8: regulator-1v8 {
++		compatible = "regulator-fixed";
++		regulator-name = "VCC-1V8-AUDIO";
++		regulator-max-microvolt = <1800000>;
++		regulator-min-microvolt = <1800000>;
++	};
++
++	reg_sound_3v3: regulator-3v3 {
++		compatible = "regulator-fixed";
++		regulator-name = "VCC-3V3-AUDIO";
++		regulator-max-microvolt = <3300000>;
++		regulator-min-microvolt = <3300000>;
++	};
++
++	sound-peb-av-10 {
++		compatible = "simple-audio-card";
++		simple-audio-card,name = "snd-peb-av-10";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,bitclock-master = <&dailink_master>;
++		simple-audio-card,frame-master = <&dailink_master>;
++		simple-audio-card,widgets =
++			"Line", "Line In",
++			"Speaker", "Speaker",
++			"Microphone", "Microphone Jack",
++			"Headphone", "Headphone Jack";
++		simple-audio-card,routing =
++			"Speaker", "SPOP",
++			"Speaker", "SPOM",
++			"Headphone Jack", "HPLOUT",
++			"Headphone Jack", "HPROUT",
++			"LINE1L", "Line In",
++			"LINE1R", "Line In",
++			"MIC3R", "Microphone Jack",
++			"Microphone Jack", "Mic Bias";
++
++		simple-audio-card,cpu {
++			sound-dai = <&sai1>;
++		};
++
++		dailink_master: simple-audio-card,codec {
++			sound-dai = <&codec>;
++			clocks = <&osc_mclk>;
++		};
++	};
++
++	osc_mclk: oscillator-mclk {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <19200000>;
++	};
++};
++
++&lcdif {
++	assigned-clock-rates = <498000000>, <71142857>, <400000000>, <133333333>;
++	status = "okay";
++};
++
++&ldb {
++	status = "okay";
++
++	lvds-channel@0 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		fsl,data-mapping = "spwg";
++		fsl,data-width = <24>;
++		status = "okay";
++
++		port@1 {
++			reg = <1>;
++
++			lvds_out: endpoint {
++				remote-endpoint = <&panel_in>;
++			};
++		};
++	};
++};
++
++&ldb_phy {
++	status = "okay";
++};
++
++&lpi2c2 {
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	codec: codec@18 {
++		compatible = "ti,tlv320aic3007";
++		reg = <0x18>;
++		#sound-dai-cells = <0>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_codec>;
++		reset-gpios = <&gpio2 14 GPIO_ACTIVE_LOW>;
++		AVDD-supply = <&reg_sound_3v3>;
++		DRVDD-supply = <&reg_sound_3v3>;
++		DVDD-supply = <&reg_sound_1v8>;
++		IOVDD-supply = <&reg_sound_3v3>;
++		ai3x-gpio-func = <0xd 0x0>;
++		ai3x-micbias-vg = <2>;
++	};
++
++	eeprom@57 {
++		compatible = "atmel,24c32";
++		reg = <0x57>;
++		pagesize = <32>;
++		vcc-supply = <&reg_vcc_3v3>;
++	};
++
++	eepromid@5f {
++		compatible = "atmel,24c32";
++		reg = <0x5f>;
++		pagesize = <32>;
++		size = <32>;
++		vcc-supply = <&reg_vcc_3v3>;
++	};
++};
++
++&sai1 {
++	#sound-dai-cells = <0>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_sai1>;
++	status = "okay";
++};
++
++&tpm5 {
++	status = "okay";
++};
++
++&iomuxc {
++	pinctrl_backlight: backlightgrp {
++		fsl,pins = <
++			MX93_PAD_GPIO_IO18__TPM5_CH2		0x31e
++			MX93_PAD_GPIO_IO07__GPIO2_IO07		0x31e
++		>;
++	};
++
++	pinctrl_codec: codecgrp {
++		fsl,pins = <
++			MX93_PAD_GPIO_IO14__GPIO2_IO14		0x39e
++		>;
++	};
++
++	pinctrl_sai1: sai1grp {
++		fsl,pins = <
++			MX93_PAD_SAI1_TXC__SAI1_TX_BCLK			0x1202
++			MX93_PAD_SAI1_TXFS__SAI1_TX_SYNC		0x1202
++			MX93_PAD_SAI1_TXD0__SAI1_TX_DATA00		0x1402
++			MX93_PAD_SAI1_RXD0__SAI1_RX_DATA00		0x1002
++		>;
++	};
++};
+diff --git a/arch/arm64/boot/dts/freescale/imx93-phyboard-nash-peb-wlbt-07.dtso b/arch/arm64/boot/dts/freescale/imx93-phyboard-nash-peb-wlbt-07.dtso
+new file mode 100644
+index 000000000..329c12910
+--- /dev/null
++++ b/arch/arm64/boot/dts/freescale/imx93-phyboard-nash-peb-wlbt-07.dtso
+@@ -0,0 +1,120 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2025 PHYTEC Messtechnik GmbH
++ * Author: Primoz Fiser <primoz.fiser@norik.com>
++ */
++
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/interrupt-controller/irq.h>
++#include "imx93-pinfunc.h"
++
++/dts-v1/;
++/plugin/;
++
++/ {
++	compatible = "phytec,imx93-phyboard-nash";
++};
++
++&{/} {
++	usdhc3_pwrseq: usdhc3-pwrseq {
++		compatible = "mmc-pwrseq-simple";
++		reset-gpios = <&gpio4 29 GPIO_ACTIVE_LOW>;
++	};
++};
++
++&lpuart5 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart5>;
++	status = "okay";
++
++	bluetooth {
++		compatible = "nxp,88w8987-bt";
++		fw-init-baudrate = <115200>;
++	};
++};
++
++&usdhc3 {
++	#address-cells = <1>;
++	#size-cells = <0>;
++	pinctrl-names = "default", "state_100mhz", "state_200mhz", "sleep";
++	pinctrl-0 = <&pinctrl_usdhc3>, <&pinctrl_wlbt>;
++	pinctrl-1 = <&pinctrl_usdhc3_100mhz>, <&pinctrl_wlbt>;
++	pinctrl-2 = <&pinctrl_usdhc3_200mhz>, <&pinctrl_wlbt>;
++	pinctrl-3 = <&pinctrl_usdhc3_sleep>, <&pinctrl_wlbt>;
++	mmc-pwrseq = <&usdhc3_pwrseq>;
++	bus-width = <4>;
++	keep-power-in-suspend;
++	non-removable;
++	wakeup-source;
++	status = "okay";
++
++	wifi_wake_host {
++		compatible = "nxp,wifi-wake-host";
++		interrupt-parent = <&gpio4>;
++		interrupts = <28 IRQ_TYPE_LEVEL_LOW>;
++		interrupt-names = "host-wake";
++	};
++};
++
++&iomuxc {
++	pinctrl_uart5: uart5grp {
++		fsl,pins = <
++			MX93_PAD_DAP_TDO_TRACESWO__LPUART5_TX	0x31e
++			MX93_PAD_DAP_TDI__LPUART5_RX		0x31e
++			MX93_PAD_DAP_TMS_SWDIO__LPUART5_RTS_B	0x31e
++			MX93_PAD_DAP_TCLK_SWCLK__LPUART5_CTS_B	0x31e
++		>;
++	};
++
++	pinctrl_usdhc3: usdhc3grp {
++		fsl,pins = <
++			MX93_PAD_GPIO_IO22__USDHC3_CLK		0x179e
++			MX93_PAD_SD3_CMD__USDHC3_CMD 		0x4000178e
++			MX93_PAD_SD3_DATA0__USDHC3_DATA0	0x40001386
++			MX93_PAD_SD3_DATA1__USDHC3_DATA1	0x40001386
++			MX93_PAD_SD3_DATA2__USDHC3_DATA2	0x40001386
++			MX93_PAD_SD3_DATA3__USDHC3_DATA3	0x4000138e
++		>;
++	};
++
++	pinctrl_usdhc3_100mhz: usdhc3-100mhzgrp {
++		fsl,pins = <
++			MX93_PAD_GPIO_IO22__USDHC3_CLK		0x179e
++			MX93_PAD_SD3_CMD__USDHC3_CMD 		0x4000139e
++			MX93_PAD_SD3_DATA0__USDHC3_DATA0	0x4000139e
++			MX93_PAD_SD3_DATA1__USDHC3_DATA1	0x4000139e
++			MX93_PAD_SD3_DATA2__USDHC3_DATA2	0x4000139e
++			MX93_PAD_SD3_DATA3__USDHC3_DATA3	0x400013be
++		>;
++	};
++
++	pinctrl_usdhc3_200mhz: usdhc3-200mhzgrp {
++		fsl,pins = <
++			MX93_PAD_GPIO_IO22__USDHC3_CLK		0x179e
++			MX93_PAD_SD3_CMD__USDHC3_CMD 		0x4000139e
++			MX93_PAD_SD3_DATA0__USDHC3_DATA0	0x4000139e
++			MX93_PAD_SD3_DATA1__USDHC3_DATA1	0x4000139e
++			MX93_PAD_SD3_DATA2__USDHC3_DATA2	0x4000139e
++			MX93_PAD_SD3_DATA3__USDHC3_DATA3	0x4000139e
++		>;
++	};
++
++	pinctrl_usdhc3_sleep: usdhc3grpsleep {
++		fsl,pins = <
++			MX93_PAD_GPIO_IO22__USDHC3_CLK		0x31e
++			MX93_PAD_SD3_CMD__USDHC3_CMD 		0x31e
++			MX93_PAD_SD3_DATA0__USDHC3_DATA0	0x31e
++			MX93_PAD_SD3_DATA1__USDHC3_DATA1	0x31e
++			MX93_PAD_SD3_DATA2__USDHC3_DATA2	0x31e
++			MX93_PAD_SD3_DATA3__USDHC3_DATA3	0x31e
++		>;
++	};
++
++	pinctrl_wlbt: wlbtgrp {
++		fsl,pins = <
++			MX93_PAD_CCM_CLKO4__GPIO4_IO29		0x31e	/* PDn */
++			MX93_PAD_CCM_CLKO3__GPIO4_IO28		0x31e	/* WAKE_HOST */
++			MX93_PAD_CCM_CLKO2__GPIO3_IO27		0x31e	/* WAKE_DEV */
++		>;
++	};
++};
+diff --git a/arch/arm64/boot/dts/freescale/imx93-phyboard-nash-pwm-fan.dtso b/arch/arm64/boot/dts/freescale/imx93-phyboard-nash-pwm-fan.dtso
+new file mode 100644
+index 000000000..1a5245b8e
+--- /dev/null
++++ b/arch/arm64/boot/dts/freescale/imx93-phyboard-nash-pwm-fan.dtso
+@@ -0,0 +1,38 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2024 PHYTEC Messtechnik GmbH
++ * Author: Andrej Picej <andrej.picej@norik.com>
++ */
++
++#include <dt-bindings/pwm/pwm.h>
++#include "imx93-pinfunc.h"
++
++/dts-v1/;
++/plugin/;
++
++/ {
++	compatible = "phytec,imx93-phyboard-nash";
++};
++
++&{/} {
++	pwm-fan {
++		compatible = "pwm-fan";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_fan>;
++		cooling-levels = <1 90 150 200 255>;
++		pwms = <&tpm6 1 40000 PWM_POLARITY_INVERTED>;
++		#cooling-cells = <2>;
++	};
++};
++
++&tpm6 {
++	status = "okay";
++};
++
++&iomuxc {
++	pinctrl_fan: fangrp {
++		fsl,pins = <
++			MX93_PAD_GPIO_IO23__TPM6_CH1		0x31e
++		>;
++	};
++};
+diff --git a/arch/arm64/boot/dts/freescale/imx93-phyboard-nash-vm016.dtso b/arch/arm64/boot/dts/freescale/imx93-phyboard-nash-vm016.dtso
+new file mode 100644
+index 000000000..595654fbe
+--- /dev/null
++++ b/arch/arm64/boot/dts/freescale/imx93-phyboard-nash-vm016.dtso
+@@ -0,0 +1,81 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2024 PHYTEC Messtechnik GmbH
++ * Author: Stefan Riedmüller <s.riedmueller@phytec.de>
++ */
++
++/dts-v1/;
++/plugin/;
++
++/ {
++	compatible = "phytec,imx93-phyboard-nash";
++};
++
++&{/} {
++	vm016_csi1_clk: vm016-csi1-ext-clk {
++		#clock-cells = <0>;
++		compatible = "fixed-clock";
++		clock-frequency = <27000000>;
++	};
++};
++
++&cameradev {
++	status = "okay";
++};
++
++&isi_0 {
++	status = "okay";
++
++	cap_device {
++		status = "okay";
++	};
++};
++
++&lpi2c2 {
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	camera@10 {
++		#address-cells = <0x1>;
++		#size-cells = <0x0>;
++
++		compatible = "onsemi,ar0144";
++		reg = <0x10>;
++		clocks = <&vm016_csi1_clk>;
++		clock-names = "ext";
++
++		port@0 {
++			reg = <0>;
++
++			vm016_csi_ep: endpoint {
++				remote-endpoint = <&mipi_csi_ep>;
++				bus-type = <4>; /* MIPI CSI-2 D-PHY */
++				link-frequencies = /bits/ 64 <222750000>;
++				data-lanes = <1 2>;
++				clock-lanes = <0>;
++				clock-noncontinuous = <1>;
++			};
++		};
++	};
++};
++
++&media_blk_ctrl {
++	status = "okay";
++};
++
++&mipi_csi {
++	#address-cells = <1>;
++	#size-cells = <0>;
++	status = "okay";
++
++	port@0 {
++		reg = <0>;
++		mipi_csi_ep: endpoint {
++			remote-endpoint = <&vm016_csi_ep>;
++			data-lanes = <2>;
++			cfg-clk-range = <28>;
++			hs-clk-range = <0x16>;
++			bus-type = <4>;
++		};
++	};
++};
+diff --git a/arch/arm64/boot/dts/freescale/imx93-phyboard-nash.dts b/arch/arm64/boot/dts/freescale/imx93-phyboard-nash.dts
+new file mode 100644
+index 000000000..3871ffda3
+--- /dev/null
++++ b/arch/arm64/boot/dts/freescale/imx93-phyboard-nash.dts
+@@ -0,0 +1,341 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * Copyright (C) 2023 PHYTEC Messtechnik GmbH
++ * Author: Primoz Fiser <primoz.fiser@norik.com>
++ */
++
++/dts-v1/;
++
++#include <dt-bindings/net/ti-dp83867.h>
++#include "imx93-phycore-som.dtsi"
++
++/ {
++	model = "PHYTEC phyBOARD-Nash-i.MX93";
++	compatible = "phytec,imx93-phyboard-nash",
++		     "phytec,imx93-phycore-som", "fsl,imx93";
++
++	aliases {
++		rtc0 = &i2c_rtc;
++		rtc1 = &bbnsm_rtc;
++	};
++
++	chosen {
++		stdout-path = &lpuart1;
++	};
++
++	reg_can1_stb: regulator-can1-stb {
++		compatible = "regulator-fixed";
++		gpio = <&gpio4 16 GPIO_ACTIVE_LOW>;
++		enable-active-low;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_reg_can1_stb>;
++		regulator-max-microvolt = <1800000>;
++		regulator-min-microvolt = <1800000>;
++		regulator-name = "CAN1_STB";
++	};
++
++	reg_usdhc2_vmmc: regulator-usdhc2 {
++		compatible = "regulator-fixed";
++		gpio = <&gpio3 7 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_reg_usdhc2_vmmc>;
++		regulator-max-microvolt = <3300000>;
++		regulator-min-microvolt = <3300000>;
++		regulator-name = "VCC_SD";
++	};
++
++	reg_vcc_1v8: regulator-vcc-1v8 {
++		compatible = "regulator-fixed";
++		regulator-max-microvolt = <1800000>;
++		regulator-min-microvolt = <1800000>;
++		regulator-name = "VCC1V8";
++	};
++
++	reg_vcc_3v3: regulator-vcc-3v3 {
++		compatible = "regulator-fixed";
++		regulator-max-microvolt = <3300000>;
++		regulator-min-microvolt = <3300000>;
++		regulator-name = "VCC3V3";
++	};
++
++	reg_vref_1v8: regulator-adc-vref {
++		compatible = "regulator-fixed";
++		regulator-name = "VREF_1V8";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++	};
++};
++
++/* ADC */
++&adc1 {
++	/* 1.8V */
++	vref-supply = <&reg_vref_1v8>;
++	status = "okay";
++};
++
++/* Power-key */
++&bbnsm_pwrkey {
++	linux,keycode = <KEY_POWER>;
++	wakeup-source;
++};
++
++&ethphy1 {
++	ti,leds-polarity = <1>;
++};
++
++/* Ethernet */
++&eqos {
++	phy-mode = "rgmii-id";
++	phy-handle = <&ethphy2>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_eqos>;
++	status = "okay";
++};
++
++&mdio {
++	ethphy2: ethernet-phy@2 {
++		compatible = "ethernet-phy-ieee802.3-c22";
++		reg = <2>;
++		interrupt-parent = <&gpio3>;
++		interrupts = <26 IRQ_TYPE_EDGE_FALLING>;
++		ti,rx-internal-delay = <DP83867_RGMIIDCTL_1_75_NS>;
++		ti,tx-internal-delay = <DP83867_RGMIIDCTL_2_00_NS>;
++		ti,fifo-depth = <DP83867_PHYCR_FIFO_DEPTH_4_B_NIB>;
++		ti,clk-output-sel = <DP83867_CLK_O_SEL_OFF>;
++	};
++};
++
++/* CAN */
++&flexcan1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_flexcan1>;
++	xceiver-supply = <&reg_can1_stb>;
++	status = "okay";
++};
++
++&lpi2c2 {
++	#address-cells = <1>;
++	#size-cells = <0>;
++	clock-frequency = <400000>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_lpi2c2>;
++	status = "okay";
++
++	/* RTC */
++	i2c_rtc: rtc@52 {
++		compatible = "microcrystal,rv3028";
++		reg = <0x52>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_rtc>;
++		interrupt-parent = <&gpio4>;
++		interrupts = <26 IRQ_TYPE_LEVEL_LOW>;
++		trickle-resistor-ohms = <3000>;
++		wakeup-source;
++	};
++
++	/* EEPROM */
++	eeprom@54 {
++		compatible = "atmel,24c32";
++		reg = <0x54>;
++		pagesize = <32>;
++		vcc-supply = <&reg_vcc_1v8>;
++	};
++
++	/* EEPROM ID page */
++	eepromid@5c {
++		compatible = "atmel,24c32";
++		reg = <0x5c>;
++		pagesize = <32>;
++		size = <32>;
++		vcc-supply = <&reg_vcc_1v8>;
++	};
++};
++
++&lpspi6 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_lpspi6>;
++	cs-gpios = <&gpio2 0 GPIO_ACTIVE_LOW>;
++	status = "okay";
++
++	/* TPM */
++	tpm@0 {
++		compatible = "infineon,slb9670", "tcg,tpm_tis-spi";
++		reg = <0>;
++		spi-max-frequency = <10000000>;
++	};
++};
++
++/* Console */
++&lpuart1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart1>;
++	/delete-property/ dmas;
++	/delete-property/ dma-names;
++	status = "okay";
++};
++
++/* RS-232/RS-485 */
++&lpuart7 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart7>;
++	status = "okay";
++};
++
++/* USB */
++&usbphynop1 {
++	vcc-supply = <&buck4>;
++};
++
++&usbphynop2 {
++	vcc-supply = <&buck4>;
++};
++
++&usbotg1 {
++	disable-over-current;
++	dr_mode = "otg";
++	status = "okay";
++};
++
++&usbotg2 {
++	disable-over-current;
++	dr_mode = "host";
++	status = "okay";
++};
++
++/* SD-Card */
++&usdhc2 {
++	bus-width = <4>;
++	cd-gpios = <&gpio3 00 GPIO_ACTIVE_LOW>;
++	disable-wp;
++	no-mmc;
++	no-sdio;
++	pinctrl-names = "default", "state_100mhz", "state_200mhz";
++	pinctrl-0 = <&pinctrl_usdhc2_default>, <&pinctrl_usdhc2_cd>;
++	pinctrl-1 = <&pinctrl_usdhc2_100mhz>, <&pinctrl_usdhc2_cd>;
++	pinctrl-2 = <&pinctrl_usdhc2_200mhz>, <&pinctrl_usdhc2_cd>;
++	vmmc-supply = <&reg_usdhc2_vmmc>;
++	status = "okay";
++};
++
++&iomuxc {
++	pinctrl_eqos: eqosgrp {
++		fsl,pins = <
++			MX93_PAD_ENET1_RD0__ENET_QOS_RGMII_RD0			0x57e
++			MX93_PAD_ENET1_RD1__ENET_QOS_RGMII_RD1			0x57e
++			MX93_PAD_ENET1_RD2__ENET_QOS_RGMII_RD2			0x57e
++			MX93_PAD_ENET1_RD3__ENET_QOS_RGMII_RD3			0x57e
++			MX93_PAD_ENET1_RXC__CCM_ENET_QOS_CLOCK_GENERATE_RX_CLK	0x5fe
++			MX93_PAD_ENET1_RX_CTL__ENET_QOS_RGMII_RX_CTL		0x57e
++			MX93_PAD_ENET1_TD0__ENET_QOS_RGMII_TD0			0x51e
++			MX93_PAD_ENET1_TD1__ENET_QOS_RGMII_TD1			0x51e
++			MX93_PAD_ENET1_TD2__ENET_QOS_RGMII_TD2			0x50e
++			MX93_PAD_ENET1_TD3__ENET_QOS_RGMII_TD3			0x50e
++			MX93_PAD_ENET1_TXC__CCM_ENET_QOS_CLOCK_GENERATE_TX_CLK	0x58e
++			MX93_PAD_ENET1_TX_CTL__ENET_QOS_RGMII_TX_CTL		0x50e
++			MX93_PAD_CCM_CLKO1__GPIO3_IO26				0x1002
++		>;
++	};
++
++	pinctrl_flexcan1: flexcan1grp {
++		fsl,pins = <
++			MX93_PAD_PDM_BIT_STREAM0__CAN1_RX	0x139e
++			MX93_PAD_PDM_CLK__CAN1_TX		0x1382
++		>;
++	};
++
++	pinctrl_lpi2c2: lpi2c2grp {
++		fsl,pins = <
++			MX93_PAD_I2C2_SCL__LPI2C2_SCL		0x40000b9e
++			MX93_PAD_I2C2_SDA__LPI2C2_SDA		0x40000b9e
++		>;
++	};
++
++	pinctrl_lpspi6: lpspi6grp {
++		fsl,pins = <
++			MX93_PAD_GPIO_IO00__GPIO2_IO00		0x386
++			MX93_PAD_GPIO_IO01__LPSPI6_SIN		0x3fe
++			MX93_PAD_GPIO_IO02__LPSPI6_SOUT		0x386
++			MX93_PAD_GPIO_IO03__LPSPI6_SCK		0x386
++		>;
++	};
++
++	pinctrl_reg_can1_stb: regcan1stbgrp {
++		fsl,pins = <
++			MX93_PAD_ENET2_TD3__GPIO4_IO16		0x31e
++		>;
++	};
++
++	pinctrl_reg_usdhc2_vmmc: regusdhc2vmmcgrp {
++		fsl,pins = <
++			MX93_PAD_SD2_RESET_B__GPIO3_IO07	0x31e
++		>;
++	};
++
++	pinctrl_rtc: rtcgrp {
++		fsl,pins = <
++			MX93_PAD_ENET2_RD2__GPIO4_IO26		0x31e
++		>;
++	};
++
++	pinctrl_uart1: uart1grp {
++		fsl,pins = <
++			MX93_PAD_UART1_RXD__LPUART1_RX		0x31e
++			MX93_PAD_UART1_TXD__LPUART1_TX		0x30e
++		>;
++	};
++
++	pinctrl_uart7: uart7grp {
++		fsl,pins = <
++			MX93_PAD_GPIO_IO08__LPUART7_TX		0x30e
++			MX93_PAD_GPIO_IO09__LPUART7_RX		0x31e
++			MX93_PAD_GPIO_IO10__LPUART7_CTS_B	0x31e
++			MX93_PAD_GPIO_IO11__LPUART7_RTS_B	0x31e
++		>;
++	};
++
++	pinctrl_usdhc2_cd: usdhc2cdgrp {
++		fsl,pins = <
++			MX93_PAD_SD2_CD_B__GPIO3_IO00		0x31e
++		>;
++	};
++
++	/* need to config the SION for data and cmd pad, refer to ERR052021 */
++	pinctrl_usdhc2_default: usdhc2grp {
++		fsl,pins = <
++			MX93_PAD_SD2_CLK__USDHC2_CLK		0x159e
++			MX93_PAD_SD2_CMD__USDHC2_CMD		0x4000178e
++			MX93_PAD_SD2_DATA0__USDHC2_DATA0	0x40001386
++			MX93_PAD_SD2_DATA1__USDHC2_DATA1	0x40001386
++			MX93_PAD_SD2_DATA2__USDHC2_DATA2	0x40001386
++			MX93_PAD_SD2_DATA3__USDHC2_DATA3	0x4000138e
++			MX93_PAD_SD2_VSELECT__USDHC2_VSELECT	0x51e
++		>;
++	};
++
++	/* need to config the SION for data and cmd pad, refer to ERR052021 */
++	pinctrl_usdhc2_100mhz: usdhc2-100mhzgrp {
++		fsl,pins = <
++			MX93_PAD_SD2_CLK__USDHC2_CLK		0x159e
++			MX93_PAD_SD2_CMD__USDHC2_CMD		0x4000139e
++			MX93_PAD_SD2_DATA0__USDHC2_DATA0	0x4000139e
++			MX93_PAD_SD2_DATA1__USDHC2_DATA1	0x4000139e
++			MX93_PAD_SD2_DATA2__USDHC2_DATA2	0x4000139e
++			MX93_PAD_SD2_DATA3__USDHC2_DATA3	0x400013be
++			MX93_PAD_SD2_VSELECT__USDHC2_VSELECT	0x51e
++		>;
++	};
++
++	/* need to config the SION for data and cmd pad, refer to ERR052021 */
++	pinctrl_usdhc2_200mhz: usdhc2-200mhzgrp {
++		fsl,pins = <
++			MX93_PAD_SD2_CLK__USDHC2_CLK		0x159e
++			MX93_PAD_SD2_CMD__USDHC2_CMD		0x4000139e
++			MX93_PAD_SD2_DATA0__USDHC2_DATA0	0x4000139e
++			MX93_PAD_SD2_DATA1__USDHC2_DATA1	0x4000139e
++			MX93_PAD_SD2_DATA2__USDHC2_DATA2	0x4000139e
++			MX93_PAD_SD2_DATA3__USDHC2_DATA3	0x4000139e
++			MX93_PAD_SD2_VSELECT__USDHC2_VSELECT	0x51e
++		>;
++	};
++};
+diff --git a/arch/arm64/boot/dts/freescale/imx93-phyboard-segin-peb-av-02.dtso b/arch/arm64/boot/dts/freescale/imx93-phyboard-segin-peb-av-02.dtso
+new file mode 100644
+index 000000000..7d7e34404
+--- /dev/null
++++ b/arch/arm64/boot/dts/freescale/imx93-phyboard-segin-peb-av-02.dtso
+@@ -0,0 +1,144 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2023 PHYTEC Messtechnik GmbH
++ * Author: Andrej Picej <andrej.picej@norik.com>
++ */
++
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/interrupt-controller/arm-gic.h>
++#include "imx93-pinfunc.h"
++
++/dts-v1/;
++/plugin/;
++
++/ {
++	compatible = "phytec,imx93-phyboard-segin";
++};
++
++&{/} {
++	panel {
++		compatible = "edt,etm0700g0edh6";
++		backlight = <&backlight_peb>;
++		power-supply = <&reg_vcc_3v3>;
++
++		port {
++			panel_in: endpoint {
++				remote-endpoint = <&display_out>;
++			};
++		};
++	};
++
++	backlight_peb: backlight {
++		compatible = "gpio-backlight";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_backlight>;
++		gpios = <&gpio4 28 GPIO_ACTIVE_HIGH>;
++		default-on;
++	};
++
++	reg_backlight_en: regulator-backlight-en {
++		compatible = "regulator-fixed";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_backlight_en>;
++		regulator-name = "Backlight";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		gpio = <&gpio4 29 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++		regulator-always-on;
++	};
++};
++
++&lcdif {
++	status = "okay";
++	assigned-clock-rates = <150000000>, <30000000>, <400000000>, <133333333>;
++};
++
++&parallel_disp_fmt {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_lcdif>;
++	fsl,interface-pix-fmt = "rgb666";
++	status = "okay";
++
++	ports {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		port@1 {
++			reg = <1>;
++
++			display_out: endpoint {
++				remote-endpoint = <&panel_in>;
++			};
++		};
++	};
++};
++
++&lpi2c2 {
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	polytouch: edt-ft5x06@38 {
++		compatible = "edt,edt-ft5406";
++		reg = <0x38>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_edt_ft5x06>;
++		interrupt-parent = <&gpio4>;
++		interrupts = <12 IRQ_TYPE_EDGE_FALLING>;
++		reset-gpios = <&gpio4 1 GPIO_ACTIVE_LOW>;
++		touchscreen-size-x = <1792>;
++		touchscreen-size-y = <1024>;
++		vcc-supply = <&reg_vcc_3v3>;
++		iovcc-supply = <&reg_vcc_3v3>;
++		wakeup-source;
++		status = "okay";
++	};
++};
++
++&iomuxc {
++	pinctrl_backlight: backlightgrp {
++		fsl,pins = <
++			MX93_PAD_CCM_CLKO3__GPIO4_IO28 0x1133e
++		>;
++	};
++
++	pinctrl_backlight_en: backlightengrp {
++		fsl,pins = <
++			MX93_PAD_CCM_CLKO4__GPIO4_IO29	0x1133e
++		>;
++	};
++
++	pinctrl_edt_ft5x06: edtft5x06grp {
++		fsl,pins = <
++			MX93_PAD_ENET1_MDIO__GPIO4_IO01	0x11e
++			MX93_PAD_ENET1_RD2__GPIO4_IO12	0x1133e
++		>;
++	};
++
++	pinctrl_lcdif: lcdifgrp {
++		fsl,pins = <
++			MX93_PAD_GPIO_IO00__MEDIAMIX_DISP_CLK		0x50e
++			MX93_PAD_GPIO_IO01__MEDIAMIX_DISP_DE		0x50e
++			MX93_PAD_GPIO_IO02__MEDIAMIX_DISP_VSYNC		0x50e
++			MX93_PAD_GPIO_IO03__MEDIAMIX_DISP_HSYNC		0x50e
++			MX93_PAD_GPIO_IO04__MEDIAMIX_DISP_DATA00	0x50e
++			MX93_PAD_GPIO_IO05__MEDIAMIX_DISP_DATA01	0x50e
++			MX93_PAD_GPIO_IO06__MEDIAMIX_DISP_DATA02	0x50e
++			MX93_PAD_GPIO_IO07__MEDIAMIX_DISP_DATA03	0x50e
++			MX93_PAD_GPIO_IO08__MEDIAMIX_DISP_DATA04	0x50e
++			MX93_PAD_GPIO_IO09__MEDIAMIX_DISP_DATA05	0x51e
++			MX93_PAD_GPIO_IO10__MEDIAMIX_DISP_DATA06	0x50e
++			MX93_PAD_GPIO_IO11__MEDIAMIX_DISP_DATA07	0x50e
++			MX93_PAD_GPIO_IO12__MEDIAMIX_DISP_DATA08	0x50e
++			MX93_PAD_GPIO_IO13__MEDIAMIX_DISP_DATA09	0x50e
++			MX93_PAD_GPIO_IO14__MEDIAMIX_DISP_DATA10	0x50e
++			MX93_PAD_GPIO_IO15__MEDIAMIX_DISP_DATA11	0x50e
++			MX93_PAD_GPIO_IO16__MEDIAMIX_DISP_DATA12	0x506
++			MX93_PAD_GPIO_IO17__MEDIAMIX_DISP_DATA13	0x506
++			MX93_PAD_GPIO_IO18__MEDIAMIX_DISP_DATA14	0x506
++			MX93_PAD_GPIO_IO19__MEDIAMIX_DISP_DATA15	0x506
++			MX93_PAD_GPIO_IO20__MEDIAMIX_DISP_DATA16	0x506
++			MX93_PAD_GPIO_IO21__MEDIAMIX_DISP_DATA17	0x506
++		>;
++	};
++};
+diff --git a/arch/arm64/boot/dts/freescale/imx93-phyboard-segin-peb-eval-01.dtso b/arch/arm64/boot/dts/freescale/imx93-phyboard-segin-peb-eval-01.dtso
+new file mode 100644
+index 000000000..a92fcc709
+--- /dev/null
++++ b/arch/arm64/boot/dts/freescale/imx93-phyboard-segin-peb-eval-01.dtso
+@@ -0,0 +1,59 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2023 PHYTEC Messtechnik GmbH
++ * Author: Andrej Picej <andrej.picej@norik.com>
++ */
++
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/leds/common.h>
++#include <dt-bindings/input/input.h>
++#include "imx93-pinfunc.h"
++
++/dts-v1/;
++/plugin/;
++
++/ {
++	compatible = "phytec,imx93-phyboard-segin";
++};
++
++&{/} {
++	gpio-keys {
++		compatible = "gpio-keys";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_gpio_keys>;
++
++		sleep {
++			label = "Sleep Button";
++			gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
++			linux,code = <KEY_SLEEP>;
++			wakeup-source;
++		};
++	};
++
++	user_leds: user-leds {
++		compatible = "gpio-leds";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_user_leds>;
++
++		user-led2 {
++			color = <LED_COLOR_ID_YELLOW>;
++			gpios = <&gpio4 13 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "gpio";
++			default-state = "on";
++		};
++	};
++};
++
++&iomuxc {
++	pinctrl_gpio_keys: gpiokeysgrp {
++		fsl,pins = <
++			MX93_PAD_PDM_BIT_STREAM1__GPIO1_IO10	0x31e
++		>;
++	};
++
++	pinctrl_user_leds: userledsgrp {
++		fsl,pins = <
++			MX93_PAD_ENET1_RD3__GPIO4_IO13		0x31e
++		>;
++	};
++};
+diff --git a/arch/arm64/boot/dts/freescale/imx93-phyboard-segin-peb-wlbt-05.dtso b/arch/arm64/boot/dts/freescale/imx93-phyboard-segin-peb-wlbt-05.dtso
+new file mode 100644
+index 000000000..3cc656ab4
+--- /dev/null
++++ b/arch/arm64/boot/dts/freescale/imx93-phyboard-segin-peb-wlbt-05.dtso
+@@ -0,0 +1,101 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2024 PHYTEC Messtechnik GmbH
++ * Author: Andrej Picej <andrej.picej@norik.com>
++ */
++
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/interrupt-controller/irq.h>
++#include "imx93-pinfunc.h"
++
++/dts-v1/;
++/plugin/;
++
++/ {
++	compatible = "phytec,imx93-phyboard-segin";
++};
++
++&{/} {
++	reg_wl_en: regulator-wl-en {
++		compatible = "regulator-fixed";
++		regulator-name = "wlan_en";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_wl>;
++		gpio = <&gpio4 7 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++		startup-delay-us = <100>;
++	};
++};
++
++&lpuart5 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart5_bt &pinctrl_bt>;
++	/*
++	* NOTE: J9 and J10 solder pads on PEB-WLBT-05 need to be resolder to
++	* connect 2+3 pads (crossing RTS and CTS lines).
++	*/
++	status = "okay";
++
++	bluetooth {
++		compatible = "brcm,bcm43438-bt";
++		shutdown-gpios = <&gpio4 13 GPIO_ACTIVE_HIGH>;
++		host-wakeup-gpios = <&gpio1 0 GPIO_ACTIVE_HIGH>;
++		max-speed = <2000000>;
++		vbat-supply = <&reg_vcc_3v3>;
++		vddio-supply = <&reg_vcc_3v3>;
++	};
++};
++
++&usdhc3 {
++	#address-cells = <1>;
++	#size-cells = <0>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_usdhc3_wl>;
++	vmmc-supply = <&reg_wl_en>;
++	bus-width = <4>;
++	non-removable;
++	no-1-8-v;
++	status = "okay";
++
++	brmcf: wifi@1 {
++		compatible = "brcm,bcm4329-fmac";
++		reg = <1>;
++	};
++};
++
++&iomuxc {
++	pinctrl_bt: btgrp {
++		fsl,pins = <
++			MX93_PAD_ENET1_RD3__GPIO4_IO13  0x31e   /* BT ENABLE */
++			MX93_PAD_I2C1_SCL__GPIO1_IO00   0x31e   /* HOST WAKEUP */
++		>;
++	};
++
++	pinctrl_uart5_bt: uart5grp-bt {
++		fsl,pins = <
++			MX93_PAD_DAP_TDO_TRACESWO__LPUART5_TX   0x31e
++			MX93_PAD_DAP_TDI__LPUART5_RX            0x31e
++			MX93_PAD_DAP_TCLK_SWCLK__LPUART5_CTS_B  0x31e
++			MX93_PAD_DAP_TMS_SWDIO__LPUART5_RTS_B   0x31e
++		>;
++	};
++
++	pinctrl_usdhc3_wl: usdhc3grp-wl {
++		fsl,pins = <
++			MX93_PAD_GPIO_IO22__USDHC3_CLK		0x179e
++			MX93_PAD_GPIO_IO23__USDHC3_CMD 		0x4000139e
++			MX93_PAD_GPIO_IO24__USDHC3_DATA0        0x4000139e
++			MX93_PAD_GPIO_IO25__USDHC3_DATA1        0x4000139e
++			MX93_PAD_GPIO_IO26__USDHC3_DATA2        0x4000139e
++			MX93_PAD_GPIO_IO27__USDHC3_DATA3        0x4000139e
++		>;
++	};
++
++	pinctrl_wl: wlgrp {
++		fsl,pins = <
++			MX93_PAD_ENET1_TXC__GPIO4_IO07  0x31e /* WLAN ENABLE */
++		>;
++	};
++};
+diff --git a/arch/arm64/boot/dts/freescale/imx93-phyboard-segin.dts b/arch/arm64/boot/dts/freescale/imx93-phyboard-segin.dts
+new file mode 100644
+index 000000000..45dc547c4
+--- /dev/null
++++ b/arch/arm64/boot/dts/freescale/imx93-phyboard-segin.dts
+@@ -0,0 +1,339 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * Copyright (C) 2023 PHYTEC Messtechnik GmbH
++ * Author: Wadim Egorov <w.egorov@phytec.de>, Christoph Stoidner <c.stoidner@phytec.de>
++ *
++ * Product homepage:
++ * phyBOARD-Segin carrier board is reused for the i.MX93 design.
++ * https://www.phytec.eu/en/produkte/single-board-computer/phyboard-segin-imx6ul/
++ */
++
++/dts-v1/;
++
++#include <dt-bindings/usb/pd.h>
++#include "imx93-phycore-som.dtsi"
++
++/ {
++	model = "PHYTEC phyBOARD-Segin-i.MX93";
++	compatible = "phytec,imx93-phyboard-segin",
++		     "phytec,imx93-phycore-som", "fsl,imx93";
++
++	chosen {
++		stdout-path = &lpuart1;
++	};
++
++	/* M-R-SN65HVD234.A0 */
++	reg_can1_en: regulator-can1 {
++		compatible = "regulator-fixed";
++		gpio = <&gpio4 16 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_flexcan1_en>;
++		regulator-max-microvolt = <3300000>;
++		regulator-min-microvolt = <3300000>;
++		regulator-name = "CAN1_EN";
++	};
++
++	reg_usdhc2_vmmc: regulator-usdhc2 {
++		compatible = "regulator-fixed";
++		gpio = <&gpio3 7 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_reg_usdhc2_vmmc>;
++		regulator-max-microvolt = <3300000>;
++		regulator-min-microvolt = <3300000>;
++		regulator-name = "VCC_SD";
++	};
++
++	reg_vcc_1v8_audio: regulator-vcc1v8-audio {
++		compatible = "regulator-fixed";
++		regulator-max-microvolt = <1800000>;
++		regulator-min-microvolt = <1800000>;
++		regulator-name = "VCC1V8_AUDIO";
++	};
++
++	reg_vcc_3v3: regulator-vcc-3v3 {
++		compatible = "regulator-fixed";
++		regulator-max-microvolt = <3300000>;
++		regulator-min-microvolt = <3300000>;
++		regulator-name = "VCC3V3";
++	};
++
++	sound: sound {
++		compatible = "simple-audio-card";
++		simple-audio-card,name = "phyBOARD-Segin-TLV320AIC3007";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,bitclock-master = <&dailink_master>;
++		simple-audio-card,frame-master = <&dailink_master>;
++		simple-audio-card,widgets =
++			"Line", "Line In",
++			"Line", "Line Out",
++			"Speaker", "Speaker";
++		simple-audio-card,routing =
++			"Line Out", "LLOUT",
++			"Line Out", "RLOUT",
++			"Speaker", "SPOP",
++			"Speaker", "SPOM",
++			"LINE1L", "Line In",
++			"LINE1R", "Line In";
++
++		simple-audio-card,cpu {
++			sound-dai = <&sai1>;
++		};
++
++		dailink_master: simple-audio-card,codec {
++			sound-dai = <&tlv320>;
++			clocks = <&clk IMX93_CLK_SAI1>;
++		};
++	};
++};
++
++/* Audio */
++&sai1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_sai1>;
++	clocks = <&clk IMX93_CLK_SAI1_IPG>, <&clk IMX93_CLK_DUMMY>,
++		<&clk IMX93_CLK_SAI1_GATE>,
++		<&clk IMX93_CLK_DUMMY>, <&clk IMX93_CLK_DUMMY>,
++		<&clk IMX93_CLK_AUDIO_PLL>;
++	clock-names = "bus", "mclk0", "mclk1", "mclk2", "mclk3", "pll8k";
++	assigned-clocks = <&clk IMX93_CLK_SAI1>;
++	assigned-clock-parents = <&clk IMX93_CLK_AUDIO_PLL>;
++	assigned-clock-rates = <19200000>;
++	fsl,sai-mclk-direction-output;
++	#sound-dai-cells = <0>;
++	status = "okay";
++};
++
++/* Power-key */
++&bbnsm_pwrkey {
++	linux,keycode = <KEY_POWER>;
++	wakeup-source;
++};
++
++&ethphy1 {
++	ti,leds-polarity = <0>;
++};
++
++/* Ethernet */
++&eqos {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_eqos>;
++	phy-mode = "rmii";
++	phy-handle = <&ethphy2>;
++	assigned-clocks = <&clk IMX93_CLK_ENET_TIMER2>,
++			  <&clk IMX93_CLK_ENET>;
++	assigned-clock-parents = <&clk IMX93_CLK_SYS_PLL_PFD1_DIV2>,
++				 <&clk IMX93_CLK_SYS_PLL_PFD1_DIV2>;
++	assigned-clock-rates = <100000000>, <50000000>;
++	status = "okay";
++};
++
++/* ENET2 MDIO */
++&mdio {
++	ethphy2: ethernet-phy@2 {
++		reg = <2>;
++		micrel,led-mode = <1>;
++		compatible = "ethernet-phy-id0022.1561";
++
++		/*
++		 * HACK:
++		 * IMX93_CLK_ENET is the ref clock and should be running at 50Mhz.
++		 * Using it here to tell the PHY we are running at 50MHz is not working.
++		 * Let us simply use another clock here.
++		 */
++		/* clocks = <&clk IMX93_CLK_ENET>; */
++		clocks = <&clk IMX93_CLK_ENET_REF_PHY>;
++		clock-names = "rmii-ref";
++	};
++};
++
++/* CAN */
++&flexcan1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_flexcan1>;
++	xceiver-supply = <&reg_can1_en>;
++	status = "okay";
++};
++
++&lpi2c2 {
++	clock-frequency = <400000>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_lpi2c2>;
++	#address-cells = <1>;
++	#size-cells = <0>;
++	status = "okay";
++
++	tlv320: audio-codec@18 {
++		compatible = "ti,tlv320aic3007";
++		reg = <0x18>;
++		AVDD-supply = <&reg_vcc_3v3>;
++		IOVDD-supply = <&reg_vcc_3v3>;
++		DRVDD-supply = <&reg_vcc_3v3>;
++		DVDD-supply = <&reg_vcc_1v8_audio>;
++		#sound-dai-cells = <0>;
++	};
++
++	i2c_rtc: rtc@68 {
++		compatible = "microcrystal,rv4162";
++		reg = <0x68>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_rtc>;
++		interrupt-parent = <&gpio4>;
++		interrupts = <26 IRQ_TYPE_LEVEL_LOW>;
++	};
++};
++
++/* Console */
++&lpuart1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart1>;
++	/delete-property/ dmas;
++	/delete-property/ dma-names;
++	status = "okay";
++};
++
++/* USB  */
++&usbotg1 {
++	disable-over-current;
++	dr_mode = "otg";
++	status = "okay";
++};
++
++&usbotg2 {
++	disable-over-current;
++	dr_mode = "host";
++	status = "okay";
++};
++
++&usbphynop1 {
++	vcc-supply = <&buck4>;
++};
++
++&usbphynop2 {
++	vcc-supply = <&buck4>;
++};
++
++/* SD-Card */
++&usdhc2 {
++	pinctrl-names = "default", "state_100mhz", "state_200mhz";
++	pinctrl-0 = <&pinctrl_usdhc2_default>, <&pinctrl_usdhc2_cd>;
++	pinctrl-1 = <&pinctrl_usdhc2_100mhz>, <&pinctrl_usdhc2_cd>;
++	pinctrl-2 = <&pinctrl_usdhc2_200mhz>, <&pinctrl_usdhc2_cd>;
++	cd-gpios = <&gpio3 00 GPIO_ACTIVE_LOW>;
++	vmmc-supply = <&reg_usdhc2_vmmc>;
++	bus-width = <4>;
++	disable-wp;
++	no-sdio;
++	no-mmc;
++	status = "okay";
++};
++
++&iomuxc {
++	pinctrl_sai1: sai1grp {
++		fsl,pins = <
++			MX93_PAD_UART2_RXD__SAI1_MCLK				0x1202
++			MX93_PAD_SAI1_TXFS__SAI1_TX_SYNC			0x1202
++			MX93_PAD_SAI1_TXC__SAI1_TX_BCLK				0x1202
++			MX93_PAD_SAI1_TXD0__SAI1_TX_DATA00			0x1402
++			MX93_PAD_SAI1_RXD0__SAI1_RX_DATA00			0x1402
++		>;
++	};
++
++	pinctrl_eqos: eqosgrp {
++		fsl,pins = <
++			MX93_PAD_ENET1_TD2__CCM_ENET_QOS_CLOCK_GENERATE_REF_CLK 0x4000050e
++			MX93_PAD_ENET1_RD0__ENET_QOS_RGMII_RD0			0x57e
++			MX93_PAD_ENET1_RD1__ENET_QOS_RGMII_RD1			0x57e
++			MX93_PAD_ENET1_TD0__ENET_QOS_RGMII_TD0			0x50e
++			MX93_PAD_ENET1_TD1__ENET_QOS_RGMII_TD1			0x50e
++			MX93_PAD_ENET1_RX_CTL__ENET_QOS_RGMII_RX_CTL		0x57e
++			MX93_PAD_ENET1_TX_CTL__ENET_QOS_RGMII_TX_CTL		0x50e
++			MX93_PAD_ENET1_RXC__ENET_QOS_RX_ER			0x57e
++		>;
++	};
++
++	pinctrl_lpi2c2: lpi2c2grp {
++		fsl,pins = <
++			MX93_PAD_I2C2_SCL__LPI2C2_SCL			0x40000b9e
++			MX93_PAD_I2C2_SDA__LPI2C2_SDA			0x40000b9e
++		>;
++	};
++
++	pinctrl_uart1: uart1grp {
++		fsl,pins = <
++			MX93_PAD_UART1_RXD__LPUART1_RX			0x31e
++			MX93_PAD_UART1_TXD__LPUART1_TX			0x30e
++		>;
++	};
++
++	pinctrl_reg_usdhc2_vmmc: regusdhc2vmmcgrp {
++		fsl,pins = <
++			MX93_PAD_SD2_RESET_B__GPIO3_IO07	0x31e
++		>;
++	};
++
++	pinctrl_usdhc2_cd: usdhc2cdgrp {
++		fsl,pins = <
++			MX93_PAD_SD2_CD_B__GPIO3_IO00		0x31e
++		>;
++	};
++
++	/* need to config the SION for data and cmd pad, refer to ERR052021 */
++	pinctrl_usdhc2_default: usdhc2grp {
++		fsl,pins = <
++			MX93_PAD_SD2_CLK__USDHC2_CLK		0x159e
++			MX93_PAD_SD2_CMD__USDHC2_CMD		0x4000139e
++			MX93_PAD_SD2_DATA0__USDHC2_DATA0	0x4000138e
++			MX93_PAD_SD2_DATA1__USDHC2_DATA1	0x4000138e
++			MX93_PAD_SD2_DATA2__USDHC2_DATA2	0x4000138e
++			MX93_PAD_SD2_DATA3__USDHC2_DATA3	0x4000139e
++			MX93_PAD_SD2_VSELECT__USDHC2_VSELECT	0x51e
++		>;
++	};
++
++	/* need to config the SION for data and cmd pad, refer to ERR052021 */
++	pinctrl_usdhc2_100mhz: usdhc2-100mhzgrp {
++		fsl,pins = <
++			MX93_PAD_SD2_CLK__USDHC2_CLK            0x159e
++			MX93_PAD_SD2_CMD__USDHC2_CMD            0x4000139e
++			MX93_PAD_SD2_DATA0__USDHC2_DATA0        0x4000138e
++			MX93_PAD_SD2_DATA1__USDHC2_DATA1        0x4000138e
++			MX93_PAD_SD2_DATA2__USDHC2_DATA2        0x4000139e
++			MX93_PAD_SD2_DATA3__USDHC2_DATA3        0x4000139e
++			MX93_PAD_SD2_VSELECT__USDHC2_VSELECT    0x51e
++		>;
++	};
++
++	/* need to config the SION for data and cmd pad, refer to ERR052021 */
++	pinctrl_usdhc2_200mhz: usdhc2-200mhzgrp {
++		fsl,pins = <
++			MX93_PAD_SD2_CLK__USDHC2_CLK            0x158e
++			MX93_PAD_SD2_CMD__USDHC2_CMD            0x4000139e
++			MX93_PAD_SD2_DATA0__USDHC2_DATA0        0x4000139e
++			MX93_PAD_SD2_DATA1__USDHC2_DATA1        0x4000139e
++			MX93_PAD_SD2_DATA2__USDHC2_DATA2        0x4000139e
++			MX93_PAD_SD2_DATA3__USDHC2_DATA3        0x4000139e
++			MX93_PAD_SD2_VSELECT__USDHC2_VSELECT    0x51e
++		>;
++	};
++
++	pinctrl_rtc: rtcgrp {
++		fsl,pins = <
++			MX93_PAD_ENET2_RD2__GPIO4_IO26		0x31e
++		>;
++	};
++
++	pinctrl_flexcan1: flexcan1grp {
++		fsl,pins = <
++			MX93_PAD_PDM_BIT_STREAM0__CAN1_RX	0x139e
++			MX93_PAD_PDM_CLK__CAN1_TX		0x13e9
++		>;
++	};
++
++	pinctrl_flexcan1_en: flexcan1engrp {
++		fsl,pins = <
++			MX93_PAD_ENET2_TD3__GPIO4_IO16		0x31e
++		>;
++	};
++};
+diff --git a/arch/arm64/boot/dts/freescale/imx93-phycore-rpmsg.dtso b/arch/arm64/boot/dts/freescale/imx93-phycore-rpmsg.dtso
+new file mode 100644
+index 000000000..1ba9700ac
+--- /dev/null
++++ b/arch/arm64/boot/dts/freescale/imx93-phycore-rpmsg.dtso
+@@ -0,0 +1,65 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2023 PHYTEC Messtechnik GmbH
++ * Author: Primoz Fiser <primoz.fiser@norik.com>
++ */
++
++/dts-v1/;
++/plugin/;
++
++/ {
++	compatible = "phytec,imx93-phycore-som";
++};
++
++&{/} {
++	reserved-memory {
++		#address-cells = <2>;
++		#size-cells = <2>;
++
++		vdev0vring0: vdev0vring0@a4000000 {
++			reg = <0 0xa4000000 0 0x8000>;
++			no-map;
++		};
++
++		vdev0vring1: vdev0vring1@a4008000 {
++			reg = <0 0xa4008000 0 0x8000>;
++			no-map;
++		};
++
++		vdev1vring0: vdev1vring0@a4010000 {
++			reg = <0 0xa4010000 0 0x8000>;
++			no-map;
++		};
++
++		vdev1vring1: vdev1vring1@a4018000 {
++			reg = <0 0xa4018000 0 0x8000>;
++			no-map;
++		};
++
++		rsc_table: rsc-table@2021e000 {
++			reg = <0 0x2021e000 0 0x1000>;
++			no-map;
++		};
++
++		vdevbuffer: vdevbuffer@a4020000 {
++			compatible = "shared-dma-pool";
++			reg = <0 0xa4020000 0 0x100000>;
++			no-map;
++		};
++	};
++};
++
++&cm33 {
++	mbox-names = "tx", "rx", "rxdb";
++	mboxes = <&mu1 0 1>,
++		 <&mu1 1 1>,
++		 <&mu1 3 1>;
++	memory-region = <&vdevbuffer>, <&vdev0vring0>, <&vdev0vring1>,
++		 <&vdev1vring0>, <&vdev1vring1>, <&rsc_table>;
++	fsl,startup-delay-ms = <500>;
++	status = "okay";
++};
++
++&mu1 {
++	status = "okay";
++};
+diff --git a/arch/arm64/boot/dts/freescale/imx93-phycore-som.dtsi b/arch/arm64/boot/dts/freescale/imx93-phycore-som.dtsi
+new file mode 100644
+index 000000000..d7abdb7b4
+--- /dev/null
++++ b/arch/arm64/boot/dts/freescale/imx93-phycore-som.dtsi
+@@ -0,0 +1,296 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * Copyright (C) 2023 PHYTEC Messtechnik GmbH
++ * Author: Wadim Egorov <w.egorov@phytec.de>, Christoph Stoidner <c.stoidner@phytec.de>
++ *
++ * Product homepage:
++ * https://www.phytec.eu/en/produkte/system-on-modules/phycore-imx-91-93/
++ */
++
++#include <dt-bindings/leds/common.h>
++#include "imx93.dtsi"
++
++/ {
++	model = "PHYTEC phyCORE-i.MX93";
++	compatible = "phytec,imx93-phycore-som", "fsl,imx93";
++
++	reserved_memory: reserved-memory {
++		ranges;
++		#address-cells = <2>;
++		#size-cells = <2>;
++
++		linux,cma {
++			compatible = "shared-dma-pool";
++			reusable;
++			alloc-ranges = <0 0x80000000 0 0x40000000>;
++			size = <0 0x10000000>;
++			linux,cma-default;
++		};
++
++		ele_reserved: ele-reserved@a4120000 {
++			compatible = "shared-dma-pool";
++			reg = <0 0xa4120000 0 0x100000>;
++			no-map;
++		};
++	};
++
++	leds {
++		compatible = "gpio-leds";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_leds>;
++
++		led-0 {
++			color = <LED_COLOR_ID_GREEN>;
++			function = LED_FUNCTION_HEARTBEAT;
++			gpios = <&gpio1 1 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "heartbeat";
++		};
++	};
++};
++
++&ele_fw2 {
++	memory-region = <&ele_reserved>;
++};
++
++/* PXP */
++&epxp {
++	status = "okay";
++};
++
++/* Ethernet */
++&fec {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_fec>;
++	phy-mode = "rmii";
++	phy-handle = <&ethphy1>;
++	assigned-clocks = <&clk IMX93_CLK_ENET_TIMER1>,
++			  <&clk IMX93_CLK_ENET_REF>,
++			  <&clk IMX93_CLK_ENET_REF_PHY>;
++	assigned-clock-parents = <&clk IMX93_CLK_SYS_PLL_PFD1_DIV2>,
++				 <&clk IMX93_CLK_SYS_PLL_PFD1_DIV2>,
++				 <&clk IMX93_CLK_SYS_PLL_PFD1_DIV2>;
++	assigned-clock-rates = <100000000>, <50000000>, <50000000>;
++	status = "okay";
++
++	mdio: mdio {
++		clock-frequency = <5000000>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		ethphy1: ethernet-phy@1 {
++			compatible = "ethernet-phy-id2000.a111", "ethernet-phy-ieee802.3-c22";
++			reg = <1>;
++		};
++	};
++};
++
++/* I2C3 */
++&lpi2c3 {
++	clock-frequency = <400000>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_lpi2c3>;
++	#address-cells = <1>;
++	#size-cells = <0>;
++	status = "okay";
++
++	pmic@25 {
++		compatible = "nxp,pca9451a";
++		reg = <0x25>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_pmic>;
++		interrupt-parent = <&gpio4>;
++		interrupts = <27 IRQ_TYPE_LEVEL_LOW>;
++
++		regulators {
++			buck1: BUCK1 {
++				regulator-name = "VDD_SOC";
++				regulator-min-microvolt = <610000>;
++				regulator-max-microvolt = <950000>;
++				regulator-boot-on;
++				regulator-always-on;
++				regulator-ramp-delay = <3125>;
++			};
++
++			buck2: BUCK2 {
++				regulator-name = "VDDQ_0V6";
++				regulator-min-microvolt = <600000>;
++				regulator-max-microvolt = <600000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			buck4: BUCK4 {
++				regulator-name = "VDD_3V3_BUCK";
++				regulator-min-microvolt = <3300000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			buck5: BUCK5 {
++				regulator-name = "VDD_1V8";
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <1800000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			buck6: BUCK6 {
++				regulator-name = "VDD_1V1";
++				regulator-min-microvolt = <1100000>;
++				regulator-max-microvolt = <1100000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			ldo1: LDO1 {
++				regulator-name = "PMIC_SNVS_1V8";
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <1800000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			ldo4: LDO4 {
++				regulator-name = "VDD_0V8";
++				regulator-min-microvolt = <800000>;
++				regulator-max-microvolt = <800000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			ldo5: LDO5 {
++				regulator-name = "NVCC_SD2";
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++		};
++	};
++
++	eeprom@50 {
++		compatible = "atmel,24c32";
++		reg = <0x50>;
++		pagesize = <32>;
++		vcc-supply = <&buck4>;
++	};
++
++	eepromid@58 {
++		compatible = "atmel,24c32";
++		pagesize = <32>;
++		reg = <0x58>;
++		size = <32>;
++		vcc-supply = <&buck4>;
++	};
++};
++
++&lpm {
++	soc-supply = <&buck1>;
++	ld-mode-enabled;
++	status = "okay";
++};
++
++/* eMMC */
++&usdhc1 {
++	pinctrl-names = "default", "state_100mhz", "state_200mhz";
++	pinctrl-0 = <&pinctrl_usdhc1>;
++	pinctrl-1 = <&pinctrl_usdhc1_100mhz>;
++	pinctrl-2 = <&pinctrl_usdhc1_200mhz>;
++	bus-width = <8>;
++	non-removable;
++	no-1-8-v;
++	status = "okay";
++};
++
++/* Watchdog */
++&wdog3 {
++	status = "okay";
++};
++
++&iomuxc {
++	pinctrl_fec: fecgrp {
++		fsl,pins = <
++			MX93_PAD_ENET2_MDC__ENET1_MDC			0x50e
++			MX93_PAD_ENET2_MDIO__ENET1_MDIO			0x502
++			MX93_PAD_ENET2_RD0__ENET1_RGMII_RD0		0x57e
++			MX93_PAD_ENET2_RD1__ENET1_RGMII_RD1		0x57e
++			MX93_PAD_ENET2_RXC__ENET1_RX_ER			0x5fe
++			MX93_PAD_ENET2_RX_CTL__ENET1_RGMII_RX_CTL	0x57e
++			MX93_PAD_ENET2_TD0__ENET1_RGMII_TD0		0x50e
++			MX93_PAD_ENET2_TD1__ENET1_RGMII_TD1		0x50e
++			MX93_PAD_ENET2_TX_CTL__ENET1_RGMII_TX_CTL	0x50e
++			MX93_PAD_ENET2_TD2__ENET1_TX_CLK		0x4000050e
++		>;
++	};
++
++	pinctrl_leds: ledsgrp {
++		fsl,pins = <
++			MX93_PAD_I2C1_SDA__GPIO1_IO01			0x11e
++		>;
++	};
++
++	pinctrl_lpi2c3: lpi2c3grp {
++		fsl,pins = <
++			MX93_PAD_GPIO_IO28__LPI2C3_SDA			0x40000b9e
++			MX93_PAD_GPIO_IO29__LPI2C3_SCL			0x40000b9e
++		>;
++	};
++
++	pinctrl_pmic: pmicgrp {
++		fsl,pins = <
++			MX93_PAD_ENET2_RD3__GPIO4_IO27			0x31e
++		>;
++	};
++
++	/* need to config the SION for data and cmd pad, refer to ERR052021 */
++	pinctrl_usdhc1: usdhc1grp {
++		fsl,pins = <
++			MX93_PAD_SD1_CLK__USDHC1_CLK		0x179e
++			MX93_PAD_SD1_CMD__USDHC1_CMD		0x40001386
++			MX93_PAD_SD1_DATA0__USDHC1_DATA0	0x4000138e
++			MX93_PAD_SD1_DATA1__USDHC1_DATA1	0x40001386
++			MX93_PAD_SD1_DATA2__USDHC1_DATA2	0x4000138e
++			MX93_PAD_SD1_DATA3__USDHC1_DATA3	0x40001386
++			MX93_PAD_SD1_DATA4__USDHC1_DATA4	0x40001386
++			MX93_PAD_SD1_DATA5__USDHC1_DATA5	0x40001386
++			MX93_PAD_SD1_DATA6__USDHC1_DATA6	0x40001386
++			MX93_PAD_SD1_DATA7__USDHC1_DATA7	0x40001386
++			MX93_PAD_SD1_STROBE__USDHC1_STROBE	0x179e
++		>;
++	};
++
++	/* need to config the SION for data and cmd pad, refer to ERR052021 */
++	pinctrl_usdhc1_100mhz: usdhc1-100mhzgrp {
++		fsl,pins = <
++			MX93_PAD_SD1_CLK__USDHC1_CLK		0x17be
++			MX93_PAD_SD1_CMD__USDHC1_CMD		0x4000139e
++			MX93_PAD_SD1_DATA0__USDHC1_DATA0	0x4000138e
++			MX93_PAD_SD1_DATA1__USDHC1_DATA1	0x4000139e
++			MX93_PAD_SD1_DATA2__USDHC1_DATA2	0x400013be
++			MX93_PAD_SD1_DATA3__USDHC1_DATA3	0x4000139e
++			MX93_PAD_SD1_DATA4__USDHC1_DATA4	0x4000139e
++			MX93_PAD_SD1_DATA5__USDHC1_DATA5	0x4000139e
++			MX93_PAD_SD1_DATA6__USDHC1_DATA6	0x4000139e
++			MX93_PAD_SD1_DATA7__USDHC1_DATA7	0x4000139e
++			MX93_PAD_SD1_STROBE__USDHC1_STROBE	0x179e
++		>;
++	};
++
++	/* need to config the SION for data and cmd pad, refer to ERR052021 */
++	pinctrl_usdhc1_200mhz: usdhc1-200mhzgrp {
++		fsl,pins = <
++			MX93_PAD_SD1_CLK__USDHC1_CLK		0x17be
++			MX93_PAD_SD1_CMD__USDHC1_CMD		0x4000139e
++			MX93_PAD_SD1_DATA0__USDHC1_DATA0	0x4000139e
++			MX93_PAD_SD1_DATA1__USDHC1_DATA1	0x400013be
++			MX93_PAD_SD1_DATA2__USDHC1_DATA2	0x400013be
++			MX93_PAD_SD1_DATA3__USDHC1_DATA3	0x400013be
++			MX93_PAD_SD1_DATA4__USDHC1_DATA4	0x400013be
++			MX93_PAD_SD1_DATA5__USDHC1_DATA5	0x400013be
++			MX93_PAD_SD1_DATA6__USDHC1_DATA6	0x400013be
++			MX93_PAD_SD1_DATA7__USDHC1_DATA7	0x400013be
++			MX93_PAD_SD1_STROBE__USDHC1_STROBE	0x179e
++		>;
++	};
++};
+diff --git a/arch/arm64/boot/dts/freescale/imx93.dtsi b/arch/arm64/boot/dts/freescale/imx93.dtsi
+index 943b7e665..e3a90a947 100644
+--- a/arch/arm64/boot/dts/freescale/imx93.dtsi
++++ b/arch/arm64/boot/dts/freescale/imx93.dtsi
+@@ -30,6 +30,8 @@ aliases {
+ 		i2c5 = &lpi2c6;
+ 		i2c6 = &lpi2c7;
+ 		i2c7 = &lpi2c8;
++		ethernet0 = &fec;
++		ethernet1 = &eqos;
+ 		mmc0 = &usdhc1;
+ 		mmc1 = &usdhc2;
+ 		mmc2 = &usdhc3;
+@@ -41,6 +43,9 @@ aliases {
+ 		serial5 = &lpuart6;
+ 		serial6 = &lpuart7;
+ 		serial7 = &lpuart8;
++		isi0 = &isi_0;
++		csi0 = &mipi_csi;
++		rtc0 = &bbnsm_rtc;
+ 	};
+ 
+ 	cpus {
+@@ -68,6 +73,13 @@ A55_0: cpu@0 {
+ 			enable-method = "psci";
+ 			#cooling-cells = <2>;
+ 			cpu-idle-states = <&cpu_pd_wait>;
++			i-cache-size = <32768>;
++			i-cache-line-size = <64>;
++			i-cache-sets = <128>;
++			d-cache-size = <32768>;
++			d-cache-line-size = <64>;
++			d-cache-sets = <128>;
++			next-level-cache = <&l2_cache_l0>;
+ 		};
+ 
+ 		A55_1: cpu@100 {
+@@ -77,8 +89,43 @@ A55_1: cpu@100 {
+ 			enable-method = "psci";
+ 			#cooling-cells = <2>;
+ 			cpu-idle-states = <&cpu_pd_wait>;
++			i-cache-size = <32768>;
++			i-cache-line-size = <64>;
++			i-cache-sets = <128>;
++			d-cache-size = <32768>;
++			d-cache-line-size = <64>;
++			d-cache-sets = <128>;
++			next-level-cache = <&l2_cache_l1>;
+ 		};
+ 
++		l2_cache_l0: l2-cache-l0 {
++			compatible = "cache";
++			cache-size = <65536>;
++			cache-line-size = <64>;
++			cache-sets = <256>;
++			cache-level = <2>;
++			cache-unified;
++			next-level-cache = <&l3_cache>;
++		};
++
++		l2_cache_l1: l2-cache-l1 {
++			compatible = "cache";
++			cache-size = <65536>;
++			cache-line-size = <64>;
++			cache-sets = <256>;
++			cache-level = <2>;
++			cache-unified;
++			next-level-cache = <&l3_cache>;
++		};
++
++		l3_cache: l3-cache {
++			compatible = "cache";
++			cache-size = <262144>;
++			cache-line-size = <64>;
++			cache-sets = <256>;
++			cache-level = <3>;
++			cache-unified;
++		};
+ 	};
+ 
+ 	osc_32k: clock-osc-32k {
+@@ -171,6 +218,18 @@ cm33: remoteproc-cm33 {
+ 		status = "disabled";
+ 	};
+ 
++	usbphynop1: usbphynop1 {
++		compatible = "usb-nop-xceiv";
++		clocks = <&clk IMX93_CLK_USB_PHY_BURUNIN>;
++		clock-names = "main_clk";
++	};
++
++	usbphynop2: usbphynop2 {
++		compatible = "usb-nop-xceiv";
++		clocks = <&clk IMX93_CLK_USB_PHY_BURUNIN>;
++		clock-names = "main_clk";
++	};
++
+ 	soc@0 {
+ 		compatible = "simple-bus";
+ 		#address-cells = <1>;
+@@ -199,6 +258,80 @@ mu1: mailbox@44230000 {
+ 				status = "disabled";
+ 			};
+ 
++			edma1: dma-controller@44000000{
++				compatible = "fsl,imx93-edma";
++				reg = <0x44000000 0x10000>,
++				      <0x44010000 0x10000>, <0x44020000 0x10000>,
++				      <0x44030000 0x10000>, <0x44040000 0x10000>,
++				      <0x44050000 0x10000>, <0x44060000 0x10000>,
++				      <0x44070000 0x10000>, <0x44080000 0x10000>,
++				      <0x44090000 0x10000>, <0x440a0000 0x10000>,
++				      <0x440b0000 0x10000>, <0x440c0000 0x10000>,
++				      <0x440d0000 0x10000>, <0x440e0000 0x10000>,
++				      <0x440f0000 0x10000>, <0x44100000 0x10000>,
++				      <0x44110000 0x10000>, <0x44120000 0x10000>,
++				      <0x44130000 0x10000>, <0x44140000 0x10000>,
++				      <0x44150000 0x10000>, <0x44160000 0x10000>,
++				      <0x44170000 0x10000>, <0x44180000 0x10000>,
++				      <0x44190000 0x10000>, <0x441a0000 0x10000>,
++				      <0x441b0000 0x10000>, <0x441c0000 0x10000>,
++				      <0x441d0000 0x10000>, <0x441e0000 0x10000>,
++				      <0x441f0000 0x10000>;
++				#dma-cells = <3>;
++				dma-channels = <31>;
++				interrupts = <GIC_SPI 95 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 96 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 97 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 98 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 99 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 100 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 101 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 102 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 104 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 105 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 106 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 107 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 108 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 109 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 110 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 111 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 112 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 113 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 114 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 115 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 116 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 117 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 118 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 119 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 120 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 121 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 122 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 123 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 124 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 125 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 94 IRQ_TYPE_LEVEL_HIGH>;
++				interrupt-names = "edma1-chan0-tx", "edma1-chan1-tx",
++						  "edma1-chan2-tx", "edma1-chan3-tx",
++						  "edma1-chan4-tx", "edma1-chan5-tx",
++						  "edma1-chan6-tx", "edma1-chan7-tx",
++						  "edma1-chan8-tx", "edma1-chan9-tx",
++						  "edma1-chan10-tx", "edma1-chan11-tx",
++						  "edma1-chan12-tx", "edma1-chan13-tx",
++						  "edma1-chan14-tx", "edma1-chan15-tx",
++						  "edma1-chan16-tx", "edma1-chan17-tx",
++						  "edma1-chan18-tx", "edma1-chan19-tx",
++						  "edma1-chan20-tx", "edma1-chan21-tx",
++						  "edma1-chan22-tx", "edma1-chan23-tx",
++						  "edma1-chan24-tx", "edma1-chan25-tx",
++						  "edma1-chan26-tx", "edma1-chan27-tx",
++						  "edma1-chan28-tx", "edma1-chan29-tx",
++						  "edma1-chan30-tx", "edma1-err";
++				clocks = <&clk IMX93_CLK_EDMA1_GATE>;
++				clock-names = "edma";
++				status = "okay";
++			};
++
+ 			system_counter: timer@44290000 {
+ 				compatible = "nxp,sysctr-timer";
+ 				reg = <0x44290000 0x30000>;
+@@ -242,6 +375,19 @@ tpm2: pwm@44320000 {
+ 				status = "disabled";
+ 			};
+ 
++			i3c1: i3c-master@44330000 {
++				#address-cells = <3>;
++				#size-cells = <0>;
++				compatible = "fsl,imx93-i3c-master", "silvaco,i3c-master";
++				reg = <0x44330000 0x10000>;
++				interrupts = <GIC_SPI 12 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clk IMX93_CLK_BUS_AON>,
++					 <&clk IMX93_CLK_I3C1_GATE>,
++					 <&clk IMX93_CLK_DUMMY>;
++				clock-names = "pclk", "fast_clk", "slow_clk";
++				status = "disabled";
++			};
++
+ 			lpi2c1: i2c@44340000 {
+ 				compatible = "fsl,imx93-lpi2c", "fsl,imx7ulp-lpi2c";
+ 				reg = <0x44340000 0x10000>;
+@@ -251,6 +397,8 @@ lpi2c1: i2c@44340000 {
+ 				clocks = <&clk IMX93_CLK_LPI2C1_GATE>,
+ 					 <&clk IMX93_CLK_BUS_AON>;
+ 				clock-names = "per", "ipg";
++				dmas = <&edma1 7 0 0>, <&edma1 8 0 1>;
++				dma-names = "tx","rx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -263,6 +411,8 @@ lpi2c2: i2c@44350000 {
+ 				clocks = <&clk IMX93_CLK_LPI2C2_GATE>,
+ 					 <&clk IMX93_CLK_BUS_AON>;
+ 				clock-names = "per", "ipg";
++				dmas = <&edma1 9 0 0>, <&edma1 10 0 1>;
++				dma-names = "tx","rx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -275,6 +425,8 @@ lpspi1: spi@44360000 {
+ 				clocks = <&clk IMX93_CLK_LPSPI1_GATE>,
+ 					 <&clk IMX93_CLK_BUS_AON>;
+ 				clock-names = "per", "ipg";
++				dmas = <&edma1 11 0 0>, <&edma1 12 0 1>;
++				dma-names = "tx","rx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -287,6 +439,8 @@ lpspi2: spi@44370000 {
+ 				clocks = <&clk IMX93_CLK_LPSPI2_GATE>,
+ 					 <&clk IMX93_CLK_BUS_AON>;
+ 				clock-names = "per", "ipg";
++				dmas = <&edma1 13 0 0>, <&edma1 14 0 1>;
++				dma-names = "tx","rx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -296,6 +450,8 @@ lpuart1: serial@44380000 {
+ 				interrupts = <GIC_SPI 19 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clk IMX93_CLK_LPUART1_GATE>;
+ 				clock-names = "ipg";
++				dmas = <&edma1 17 0 1>, <&edma1 16 0 0>;
++				dma-names = "rx", "tx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -305,6 +461,8 @@ lpuart2: serial@44390000 {
+ 				interrupts = <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clk IMX93_CLK_LPUART2_GATE>;
+ 				clock-names = "ipg";
++				dmas = <&edma1 19 0 1>, <&edma1 18 0 0>;
++				dma-names = "rx", "tx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -323,6 +481,19 @@ flexcan1: can@443a0000 {
+ 				status = "disabled";
+ 			};
+ 
++			sai1: sai@443b0000 {
++				compatible = "fsl,imx93-sai";
++				reg = <0x443b0000 0x10000>;
++				interrupts = <GIC_SPI 45 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clk IMX93_CLK_SAI1_IPG>, <&clk IMX93_CLK_DUMMY>,
++					 <&clk IMX93_CLK_SAI1_GATE>, <&clk IMX93_CLK_DUMMY>,
++					 <&clk IMX93_CLK_DUMMY>;
++				clock-names = "bus", "mclk0", "mclk1", "mclk2", "mclk3";
++				dmas = <&edma1 22 0 1>, <&edma1 21 0 0>;
++				dma-names = "rx", "tx";
++				status = "disabled";
++			};
++
+ 			iomuxc: pinctrl@443c0000 {
+ 				compatible = "fsl,imx93-iomuxc";
+ 				reg = <0x443c0000 0x10000>;
+@@ -351,6 +522,10 @@ clk: clock-controller@44450000 {
+ 				#clock-cells = <1>;
+ 				clocks = <&osc_32k>, <&osc_24m>, <&clk_ext1>;
+ 				clock-names = "osc_32k", "osc_24m", "clk_ext1";
++				assigned-clocks = <&clk IMX93_CLK_AUDIO_PLL>, <&clk IMX93_CLK_VIDEO_PLL>,
++						  <&clk IMX93_CLK_A55>;
++				assigned-clock-parents = <0>, <0>, <&clk IMX93_CLK_SYS_PLL_PFD0>;
++				assigned-clock-rates = <393216000>, <594000000>, <500000000>;
+ 				status = "okay";
+ 			};
+ 
+@@ -384,7 +559,7 @@ anatop: anatop@44480000 {
+ 			};
+ 
+ 			tmu: tmu@44482000 {
+-				compatible = "fsl,qoriq-tmu";
++				compatible ="fsl,imx93-tmu", "fsl,qoriq-tmu";
+ 				reg = <0x44482000 0x1000>;
+ 				clocks = <&clk IMX93_CLK_TMC_GATE>;
+ 				little-endian;
+@@ -402,6 +577,23 @@ tmu: tmu@44482000 {
+ 				#thermal-sensor-cells = <1>;
+ 			};
+ 
++			micfil: micfil@44520000 {
++				compatible = "fsl,imx93-micfil";
++				reg = <0x44520000 0x10000>;
++				interrupts = <GIC_SPI 202 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 201 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 200 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 199 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clk IMX93_CLK_PDM_IPG>,
++					 <&clk IMX93_CLK_PDM_GATE>,
++					 <&clk IMX93_CLK_AUDIO_PLL>,
++					 <&clk IMX93_CLK_DUMMY>;
++				clock-names = "ipg_clk", "ipg_clk_app",
++					     "pll8k", "clkext3";
++				dmas = <&edma1 29 0 5>;
++				dma-names = "rx";
++				status = "disabled";
++			};
+ 
+ 			adc1: adc@44530000 {
+ 				compatible = "nxp,imx93-adc";
+@@ -424,6 +616,148 @@ aips2: bus@42000000 {
+ 			#size-cells = <1>;
+ 			ranges;
+ 
++			edma2: dma-controller@42000000{
++				compatible = "fsl,imx93-edma";
++				reg = <0x42000000 0x10000>,
++				      <0x42010000 0x8000>, <0x42018000 0x8000>,
++				      <0x42020000 0x8000>, <0x42028000 0x8000>,
++				      <0x42030000 0x8000>, <0x42038000 0x8000>,
++				      <0x42040000 0x8000>, <0x42048000 0x8000>,
++				      <0x42050000 0x8000>, <0x42058000 0x8000>,
++				      <0x42060000 0x8000>, <0x42068000 0x8000>,
++				      <0x42070000 0x8000>, <0x42078000 0x8000>,
++				      <0x42080000 0x8000>, <0x42088000 0x8000>,
++				      <0x42090000 0x8000>, <0x42098000 0x8000>,
++				      <0x420a0000 0x8000>, <0x420a8000 0x8000>,
++				      <0x420b0000 0x8000>, <0x420b8000 0x8000>,
++				      <0x420c0000 0x8000>, <0x420c8000 0x8000>,
++				      <0x420d0000 0x8000>, <0x420d8000 0x8000>,
++				      <0x420e0000 0x8000>, <0x420e8000 0x8000>,
++				      <0x420f0000 0x8000>, <0x420f8000 0x8000>,
++				      <0x42100000 0x8000>, <0x42108000 0x8000>,
++				      <0x42110000 0x8000>, <0x42118000 0x8000>,
++				      <0x42120000 0x8000>, <0x42128000 0x8000>,
++				      <0x42130000 0x8000>, <0x42138000 0x8000>,
++				      <0x42140000 0x8000>, <0x42148000 0x8000>,
++				      <0x42150000 0x8000>, <0x42158000 0x8000>,
++				      <0x42160000 0x8000>, <0x42168000 0x8000>,
++				      <0x42170000 0x8000>, <0x42178000 0x8000>,
++				      <0x42180000 0x8000>, <0x42188000 0x8000>,
++				      <0x42190000 0x8000>, <0x42198000 0x8000>,
++				      <0x421a0000 0x8000>, <0x421a8000 0x8000>,
++				      <0x421b0000 0x8000>, <0x421b8000 0x8000>,
++				      <0x421c0000 0x8000>, <0x421c8000 0x8000>,
++				      <0x421d0000 0x8000>, <0x421d8000 0x8000>,
++				      <0x421e0000 0x8000>, <0x421e8000 0x8000>,
++				      <0x421f0000 0x8000>, <0x421f8000 0x8000>,
++				      <0x42200000 0x8000>, <0x42208000 0x8000>;
++				#dma-cells = <3>;
++				shared-interrupt;
++				dma-channels = <64>;
++				interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 128 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 129 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 129 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 130 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 130 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 131 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 131 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 132 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 132 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 133 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 133 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 134 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 134 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 135 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 135 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 136 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 136 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 137 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 137 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 138 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 138 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 139 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 139 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 140 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 140 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 141 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 141 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 142 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 142 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 143 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 143 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 144 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 144 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 145 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 145 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 146 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 146 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 147 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 147 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 148 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 148 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 149 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 149 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 150 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 150 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 151 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 151 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 152 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 152 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 153 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 153 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 154 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 154 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 155 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 155 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 156 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 156 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 157 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 157 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 158 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 158 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 159 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 159 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 127 IRQ_TYPE_LEVEL_HIGH>;
++				interrupt-names = "edma2-chan0-tx", "edma2-chan1-tx",
++						  "edma2-chan2-tx", "edma2-chan3-tx",
++						  "edma2-chan4-tx", "edma2-chan5-tx",
++						  "edma2-chan6-tx", "edma2-chan7-tx",
++						  "edma2-chan8-tx", "edma2-chan9-tx",
++						  "edma2-chan10-tx", "edma2-chan11-tx",
++						  "edma2-chan12-tx", "edma2-chan13-tx",
++						  "edma2-chan14-tx", "edma2-chan15-tx",
++						  "edma2-chan16-tx", "edma2-chan17-tx",
++						  "edma2-chan18-tx", "edma2-chan19-tx",
++						  "edma2-chan20-tx", "edma2-chan21-tx",
++						  "edma2-chan22-tx", "edma2-chan23-tx",
++						  "edma2-chan24-tx", "edma2-chan25-tx",
++						  "edma2-chan26-tx", "edma2-chan27-tx",
++						  "edma2-chan28-tx", "edma2-chan29-tx",
++						  "edma2-chan30-tx", "edma2-chan31-tx",
++						  "edma2-chan32-tx", "edma2-chan33-tx",
++						  "edma2-chan34-tx", "edma2-chan35-tx",
++						  "edma2-chan36-tx", "edma2-chan37-tx",
++						  "edma2-chan38-tx", "edma2-chan39-tx",
++						  "edma2-chan40-tx", "edma2-chan41-tx",
++						  "edma2-chan42-tx", "edma2-chan43-tx",
++						  "edma2-chan44-tx", "edma2-chan45-tx",
++						  "edma2-chan46-tx", "edma2-chan47-tx",
++						  "edma2-chan48-tx", "edma2-chan49-tx",
++						  "edma2-chan50-tx", "edma2-chan51-tx",
++						  "edma2-chan52-tx", "edma2-chan53-tx",
++						  "edma2-chan54-tx", "edma2-chan55-tx",
++						  "edma2-chan56-tx", "edma2-chan57-tx",
++						  "edma2-chan58-tx", "edma2-chan59-tx",
++						  "edma2-chan60-tx", "edma2-chan61-tx",
++						  "edma2-chan62-tx", "edma2-chan63-tx",
++						  "edma2-err";
++				clocks = <&clk IMX93_CLK_EDMA2_GATE>;
++				clock-names = "edma";
++				fsl,edma-axi;
++				status = "okay";
++			};
++
+ 			wakeupmix_gpr: syscon@42420000 {
+ 				compatible = "fsl,imx93-wakeupmix-syscfg", "syscon";
+ 				reg = <0x42420000 0x1000>;
+@@ -444,6 +778,7 @@ wdog3: watchdog@42490000 {
+ 				interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clk IMX93_CLK_WDOG3_GATE>;
+ 				timeout-sec = <40>;
++				fsl,ext-reset-output;
+ 				status = "disabled";
+ 			};
+ 
+@@ -497,6 +832,19 @@ tpm6: pwm@42510000 {
+ 				status = "disabled";
+ 			};
+ 
++			i3c2: i3c-master@42520000 {
++				#address-cells = <3>;
++				#size-cells = <0>;
++				compatible = "fsl,imx93-i3c-master", "silvaco,i3c-master";
++				reg = <0x42520000 0x10000>;
++				interrupts = <GIC_SPI 61 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clk IMX93_CLK_BUS_WAKEUP>,
++					 <&clk IMX93_CLK_I3C2_GATE>,
++					 <&clk IMX93_CLK_DUMMY>;
++				clock-names = "pclk", "fast_clk", "slow_clk";
++				status = "disabled";
++			};
++
+ 			lpi2c3: i2c@42530000 {
+ 				compatible = "fsl,imx93-lpi2c", "fsl,imx7ulp-lpi2c";
+ 				reg = <0x42530000 0x10000>;
+@@ -506,6 +854,8 @@ lpi2c3: i2c@42530000 {
+ 				clocks = <&clk IMX93_CLK_LPI2C3_GATE>,
+ 					 <&clk IMX93_CLK_BUS_WAKEUP>;
+ 				clock-names = "per", "ipg";
++				dmas = <&edma2 8 0 0>, <&edma2 9 0 1>;
++				dma-names = "tx","rx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -518,6 +868,8 @@ lpi2c4: i2c@42540000 {
+ 				clocks = <&clk IMX93_CLK_LPI2C4_GATE>,
+ 					 <&clk IMX93_CLK_BUS_WAKEUP>;
+ 				clock-names = "per", "ipg";
++				dmas = <&edma2 10 0 0>, <&edma2 11 0 1>;
++				dma-names = "tx","rx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -530,6 +882,8 @@ lpspi3: spi@42550000 {
+ 				clocks = <&clk IMX93_CLK_LPSPI3_GATE>,
+ 					 <&clk IMX93_CLK_BUS_WAKEUP>;
+ 				clock-names = "per", "ipg";
++				dmas = <&edma2 12 0 0>, <&edma2 13 0 1>;
++				dma-names = "tx","rx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -542,6 +896,8 @@ lpspi4: spi@42560000 {
+ 				clocks = <&clk IMX93_CLK_LPSPI4_GATE>,
+ 					 <&clk IMX93_CLK_BUS_WAKEUP>;
+ 				clock-names = "per", "ipg";
++				dmas = <&edma2 14 0 0>, <&edma2 15 0 1>;
++				dma-names = "tx","rx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -551,6 +907,8 @@ lpuart3: serial@42570000 {
+ 				interrupts = <GIC_SPI 68 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clk IMX93_CLK_LPUART3_GATE>;
+ 				clock-names = "ipg";
++				dmas = <&edma2 18 0 1>, <&edma2 17 0 0>;
++				dma-names = "rx", "tx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -560,6 +918,8 @@ lpuart4: serial@42580000 {
+ 				interrupts = <GIC_SPI 69 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clk IMX93_CLK_LPUART4_GATE>;
+ 				clock-names = "ipg";
++				dmas = <&edma2 20 0 1>, <&edma2 19 0 0>;
++				dma-names = "rx", "tx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -569,6 +929,8 @@ lpuart5: serial@42590000 {
+ 				interrupts = <GIC_SPI 70 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clk IMX93_CLK_LPUART5_GATE>;
+ 				clock-names = "ipg";
++				dmas = <&edma2 22 0 1>, <&edma2 21 0 0>;
++				dma-names = "rx", "tx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -578,6 +940,8 @@ lpuart6: serial@425a0000 {
+ 				interrupts = <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clk IMX93_CLK_LPUART6_GATE>;
+ 				clock-names = "ipg";
++				dmas = <&edma2 24 0 1>, <&edma2 23 0 0>;
++				dma-names = "rx", "tx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -597,7 +961,7 @@ flexcan2: can@425b0000 {
+ 			};
+ 
+ 			flexspi1: spi@425e0000 {
+-				compatible = "nxp,imx8mm-fspi";
++				compatible = "nxp,imx93-fspi", "nxp,imx8mm-fspi";
+ 				reg = <0x425e0000 0x10000>, <0x28000000 0x10000000>;
+ 				reg-names = "fspi_base", "fspi_mmap";
+ 				#address-cells = <1>;
+@@ -611,12 +975,62 @@ flexspi1: spi@425e0000 {
+ 				status = "disabled";
+ 			};
+ 
++			sai2: sai@42650000 {
++				compatible = "fsl,imx93-sai";
++				reg = <0x42650000 0x10000>;
++				interrupts = <GIC_SPI 170 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clk IMX93_CLK_SAI2_IPG>, <&clk IMX93_CLK_DUMMY>,
++					 <&clk IMX93_CLK_SAI2_GATE>,
++					 <&clk IMX93_CLK_DUMMY>, <&clk IMX93_CLK_DUMMY>;
++				clock-names = "bus", "mclk0", "mclk1", "mclk2", "mclk3";
++				dmas = <&edma2 59 0 1>, <&edma2 58 0 0>;
++				dma-names = "rx", "tx";
++				status = "disabled";
++			};
++
++			sai3: sai@42660000 {
++				compatible = "fsl,imx93-sai";
++				reg = <0x42660000 0x10000>;
++				interrupts = <GIC_SPI 171 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clk IMX93_CLK_SAI3_IPG>, <&clk IMX93_CLK_DUMMY>,
++					 <&clk IMX93_CLK_SAI3_GATE>,
++					 <&clk IMX93_CLK_DUMMY>, <&clk IMX93_CLK_DUMMY>;
++				clock-names = "bus", "mclk0", "mclk1", "mclk2", "mclk3";
++				dmas = <&edma2 61 0 1>, <&edma2 60 0 0>;
++				dma-names = "rx", "tx";
++				status = "disabled";
++			};
++
++			xcvr: xcvr@42680000 {
++				compatible = "fsl,imx93-xcvr";
++				reg = <0x42680000 0x800>,
++					  <0x42680800 0x400>,
++					  <0x42680c00 0x080>,
++					  <0x42680e00 0x080>;
++				reg-names = "ram", "regs", "rxfifo",
++						    "txfifo";
++				interrupts = /* XCVR IRQ 0 */
++					     <GIC_SPI 203 IRQ_TYPE_LEVEL_HIGH>,
++						 /* XCVR IRQ 1 */
++					     <GIC_SPI 204 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clk IMX93_CLK_SPDIF_IPG>,
++					 <&clk IMX93_CLK_SPDIF_GATE>,
++					 <&clk IMX93_CLK_DUMMY>,
++					 <&clk IMX93_CLK_AUD_XCVR_GATE>;
++				clock-names = "ipg", "phy", "spba", "pll_ipg";
++				dmas = <&edma2 65 0 1>, <&edma2 66 0 0>;
++				dma-names = "rx", "tx";
++				status = "disabled";
++			};
++
+ 			lpuart7: serial@42690000 {
+ 				compatible = "fsl,imx93-lpuart", "fsl,imx8ulp-lpuart", "fsl,imx7ulp-lpuart";
+ 				reg = <0x42690000 0x1000>;
+ 				interrupts = <GIC_SPI 210 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clk IMX93_CLK_LPUART7_GATE>;
+ 				clock-names = "ipg";
++				dmas = <&edma2 88 0 1>, <&edma2 87 0 0>;
++				dma-names = "rx", "tx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -626,6 +1040,8 @@ lpuart8: serial@426a0000 {
+ 				interrupts = <GIC_SPI 211 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clk IMX93_CLK_LPUART8_GATE>;
+ 				clock-names = "ipg";
++				dmas =  <&edma2 90 0 1>, <&edma2 89 0 0>;
++				dma-names = "rx", "tx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -638,6 +1054,8 @@ lpi2c5: i2c@426b0000 {
+ 				clocks = <&clk IMX93_CLK_LPI2C5_GATE>,
+ 					 <&clk IMX93_CLK_BUS_WAKEUP>;
+ 				clock-names = "per", "ipg";
++				dmas = <&edma2 71 0 0>, <&edma2 72 0 1>;
++				dma-names = "tx","rx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -650,6 +1068,8 @@ lpi2c6: i2c@426c0000 {
+ 				clocks = <&clk IMX93_CLK_LPI2C6_GATE>,
+ 					 <&clk IMX93_CLK_BUS_WAKEUP>;
+ 				clock-names = "per", "ipg";
++				dmas = <&edma2 73 0 0>, <&edma2 74 0 1>;
++				dma-names = "tx","rx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -662,6 +1082,8 @@ lpi2c7: i2c@426d0000 {
+ 				clocks = <&clk IMX93_CLK_LPI2C7_GATE>,
+ 					 <&clk IMX93_CLK_BUS_WAKEUP>;
+ 				clock-names = "per", "ipg";
++				dmas = <&edma2 75 0 0>, <&edma2 76 0 1>;
++				dma-names = "tx","rx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -674,6 +1096,8 @@ lpi2c8: i2c@426e0000 {
+ 				clocks = <&clk IMX93_CLK_LPI2C8_GATE>,
+ 					 <&clk IMX93_CLK_BUS_WAKEUP>;
+ 				clock-names = "per", "ipg";
++				dmas = <&edma2 77 0 0>, <&edma2 78 0 1>;
++				dma-names = "tx","rx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -686,6 +1110,8 @@ lpspi5: spi@426f0000 {
+ 				clocks = <&clk IMX93_CLK_LPSPI5_GATE>,
+ 					 <&clk IMX93_CLK_BUS_WAKEUP>;
+ 				clock-names = "per", "ipg";
++				dmas = <&edma2 79 0 0>, <&edma2 80 0 1>;
++				dma-names = "tx","rx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -698,6 +1124,8 @@ lpspi6: spi@42700000 {
+ 				clocks = <&clk IMX93_CLK_LPSPI6_GATE>,
+ 					 <&clk IMX93_CLK_BUS_WAKEUP>;
+ 				clock-names = "per", "ipg";
++				dmas = <&edma2 81 0 0>, <&edma2 82 0 1>;
++				dma-names = "tx","rx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -710,6 +1138,8 @@ lpspi7: spi@42710000 {
+ 				clocks = <&clk IMX93_CLK_LPSPI7_GATE>,
+ 					 <&clk IMX93_CLK_BUS_WAKEUP>;
+ 				clock-names = "per", "ipg";
++				dmas = <&edma2 83 0 0>, <&edma2 84 0 1>;
++				dma-names = "tx","rx";
+ 				status = "disabled";
+ 			};
+ 
+@@ -722,9 +1152,31 @@ lpspi8: spi@42720000 {
+ 				clocks = <&clk IMX93_CLK_LPSPI8_GATE>,
+ 					 <&clk IMX93_CLK_BUS_WAKEUP>;
+ 				clock-names = "per", "ipg";
++				dmas = <&edma2 85 0 0>, <&edma2 86 0 1>;
++				dma-names = "tx","rx";
+ 				status = "disabled";
+ 			};
+ 
++			flexio1: flexio@425c0000 {
++				compatible = "nxp,imx-flexio";
++				reg = <0x425c0000 0x10000>;
++				interrupts = <GIC_SPI 53 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clk IMX93_CLK_FLEXIO1_GATE>,
++					 <&clk IMX93_CLK_FLEXIO1_GATE>;
++				clock-names = "per", "ipg";
++				assigned-clocks = <&clk IMX93_CLK_FLEXIO1_GATE>;
++				assigned-clock-parents = <&clk IMX93_CLK_FLEXIO1>;
++				assigned-clock-rates = <24000000>;
++				status = "disabled";
++
++				flexio_i2c: i2c-master {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					compatible = "nxp,imx-flexio-i2c-master";
++					clock-frequency = <100000>;
++					status = "disabled";
++				};
++			};
+ 		};
+ 
+ 		aips3: bus@42800000 {
+@@ -742,9 +1194,12 @@ usdhc1: mmc@42850000 {
+ 					 <&clk IMX93_CLK_WAKEUP_AXI>,
+ 					 <&clk IMX93_CLK_USDHC1_GATE>;
+ 				clock-names = "ipg", "ahb", "per";
++				assigned-clocks = <&clk IMX93_CLK_USDHC1>;
++				assigned-clock-parents = <&clk IMX93_CLK_SYS_PLL_PFD1>;
++				assigned-clock-rates = <400000000>;
+ 				bus-width = <8>;
+-				fsl,tuning-start-tap = <20>;
+-				fsl,tuning-step = <2>;
++				fsl,tuning-start-tap = <1>;
++				fsl,tuning-step= <2>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -756,9 +1211,12 @@ usdhc2: mmc@42860000 {
+ 					 <&clk IMX93_CLK_WAKEUP_AXI>,
+ 					 <&clk IMX93_CLK_USDHC2_GATE>;
+ 				clock-names = "ipg", "ahb", "per";
++				assigned-clocks = <&clk IMX93_CLK_USDHC2>;
++				assigned-clock-parents = <&clk IMX93_CLK_SYS_PLL_PFD1>;
++				assigned-clock-rates = <400000000>;
+ 				bus-width = <4>;
+-				fsl,tuning-start-tap = <20>;
+-				fsl,tuning-step = <2>;
++				fsl,tuning-start-tap = <1>;
++				fsl,tuning-step= <2>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -786,6 +1244,8 @@ fec: ethernet@42890000 {
+ 				fsl,num-tx-queues = <3>;
+ 				fsl,num-rx-queues = <3>;
+ 				fsl,stop-mode = <&wakeupmix_gpr 0x0c 1>;
++				nvmem-cells = <&eth_mac1>;
++				nvmem-cell-names = "mac-address";
+ 				status = "disabled";
+ 			};
+ 
+@@ -808,6 +1268,8 @@ eqos: ethernet@428a0000 {
+ 				assigned-clock-rates = <100000000>, <250000000>;
+ 				intf_mode = <&wakeupmix_gpr 0x28>;
+ 				snps,clk-csr = <0>;
++				nvmem-cells = <&eth_mac2>;
++				nvmem-cell-names = "mac-address";
+ 				status = "disabled";
+ 			};
+ 
+@@ -819,19 +1281,100 @@ usdhc3: mmc@428b0000 {
+ 					 <&clk IMX93_CLK_WAKEUP_AXI>,
+ 					 <&clk IMX93_CLK_USDHC3_GATE>;
+ 				clock-names = "ipg", "ahb", "per";
++				assigned-clocks = <&clk IMX93_CLK_USDHC3>;
++				assigned-clock-parents = <&clk IMX93_CLK_SYS_PLL_PFD1>;
++				assigned-clock-rates = <400000000>;
+ 				bus-width = <4>;
+-				fsl,tuning-start-tap = <20>;
+-				fsl,tuning-step = <2>;
++				fsl,tuning-start-tap = <1>;
++				fsl,tuning-step= <2>;
++				status = "disabled";
++			};
++
++			epxp: epxp@4ae20000 {
++				compatible = "fsl,imx93-pxp-dma", "fsl,imx8ulp-pxp-dma";
++				reg = <0x4ae20000 0x10000>;
++				interrupts = <GIC_SPI 173 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 174 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clk IMX93_CLK_MEDIA_APB>,
++					 <&clk IMX93_CLK_MEDIA_AXI>;
++				clock-names = "pxp_ipg", "pxp_axi";
++				pxp-gpr = <&media_blk_ctrl>;
++				power-domains = <&media_blk_ctrl IMX93_MEDIABLK_PD_PXP>;
+ 				status = "disabled";
+ 			};
++
++			cameradev: camera {
++				compatible = "fsl,mxc-md", "simple-bus";
++				#address-cells = <1>;
++				#size-cells = <1>;
++				ranges;
++				status = "disabled";
++
++				isi_0: isi@4ae40000{
++					compatible = "fsl,imx93-isi", "fsl,imx8-isi";
++					reg = <0x4ae40000 0x10000>;
++					interrupts = <GIC_SPI 172 IRQ_TYPE_LEVEL_HIGH>;
++					clocks = <&clk IMX93_CLK_ISI_GATE>,
++						 <&clk IMX93_CLK_MEDIA_AXI>;
++					clock-names = "per", "axi";
++					assigned-clocks = <&clk IMX93_CLK_MEDIA_AXI>,
++							  <&clk IMX93_CLK_MEDIA_APB>;
++					assigned-clock-parents = <&clk IMX93_CLK_SYS_PLL_PFD1>,
++								 <&clk IMX93_CLK_SYS_PLL_PFD1_DIV2>;
++					assigned-clock-rates = <400000000>, <133333333>;
++					interface = <2 0 2>;
++					no-reset-control;
++					power-domains = <&media_blk_ctrl IMX93_MEDIABLK_PD_ISI>;
++					gasket = <&media_blk_ctrl>;
++					status = "disabled";
++
++					cap_device {
++						compatible = "imx-isi-capture";
++						status = "disabled";
++					};
++				};
++
++				mipi_csi: csi@4ae00000 {
++					compatible = "fsl,dwc-mipi-csi2-host";
++					reg = <0x4ae00000 0x10000>;
++					interrupts = <GIC_SPI 175 IRQ_TYPE_LEVEL_HIGH>;
++					clocks = <&clk IMX93_CLK_MIPI_CSI_GATE>,
++						 <&clk IMX93_CLK_CAM_PIX>,
++						 <&clk IMX93_CLK_MIPI_PHY_CFG>;
++					clock-names = "clk_core", "clk_pixel", "phy_cfg";
++					assigned-clocks = <&clk IMX93_CLK_CAM_PIX>,
++							  <&clk IMX93_CLK_MIPI_PHY_CFG>;
++					assigned-clock-parents = <&clk IMX93_CLK_VIDEO_PLL>,
++								 <&clk IMX93_CLK_24M>;
++					assigned-clock-rates = <140000000>, <24000000>;
++					gasket = <&media_blk_ctrl>;
++					power-domains = <&media_blk_ctrl IMX93_MEDIABLK_PD_MIPI_CSI>;
++					status = "disabled";
++				};
++
++				parallel_csi: pcsi@4ac10070 {
++					compatible = "fsl,imx93-parallel-csi";
++					reg = <0x4ac10070 0x10>;
++					clocks = <&clk IMX93_CLK_MIPI_CSI_GATE>,
++						 <&clk IMX93_CLK_MEDIA_APB>;
++					clock-names = "pixel", "ipg";
++					assigned-clocks = <&clk IMX93_CLK_CAM_PIX>;
++					assigned-clock-parents = <&clk IMX93_CLK_VIDEO_PLL>;
++					assigned-clock-rates = <140000000>;
++					pi_gpr = <&media_blk_ctrl>;
++					power-domains = <&media_blk_ctrl IMX93_MEDIABLK_PD_MIPI_CSI>;
++					status = "disabled";
++				};
++			};
+ 		};
+ 
+-		gpio2: gpio@43810080 {
+-			compatible = "fsl,imx93-gpio", "fsl,imx7ulp-gpio";
+-			reg = <0x43810080 0x1000>, <0x43810040 0x40>;
++		gpio2: gpio@43810000 {
++			compatible = "fsl,imx93-gpio", "fsl,imx8ulp-gpio";
++			reg = <0x43810000 0x1000>;
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+-			interrupts = <GIC_SPI 57 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts = <GIC_SPI 57 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 58 IRQ_TYPE_LEVEL_HIGH>;
+ 			interrupt-controller;
+ 			#interrupt-cells = <2>;
+ 			clocks = <&clk IMX93_CLK_GPIO2_GATE>,
+@@ -840,12 +1383,13 @@ gpio2: gpio@43810080 {
+ 			gpio-ranges = <&iomuxc 0 4 30>;
+ 		};
+ 
+-		gpio3: gpio@43820080 {
+-			compatible = "fsl,imx93-gpio", "fsl,imx7ulp-gpio";
+-			reg = <0x43820080 0x1000>, <0x43820040 0x40>;
++		gpio3: gpio@43820000 {
++			compatible = "fsl,imx93-gpio", "fsl,imx8ulp-gpio";
++			reg = <0x43820000 0x1000>;
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+-			interrupts = <GIC_SPI 59 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts = <GIC_SPI 59 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 60 IRQ_TYPE_LEVEL_HIGH>;
+ 			interrupt-controller;
+ 			#interrupt-cells = <2>;
+ 			clocks = <&clk IMX93_CLK_GPIO3_GATE>,
+@@ -855,12 +1399,13 @@ gpio3: gpio@43820080 {
+ 				      <&iomuxc 26 34 2>, <&iomuxc 28 0 4>;
+ 		};
+ 
+-		gpio4: gpio@43830080 {
+-			compatible = "fsl,imx93-gpio", "fsl,imx7ulp-gpio";
+-			reg = <0x43830080 0x1000>, <0x43830040 0x40>;
++		gpio4: gpio@43830000 {
++			compatible = "fsl,imx93-gpio", "fsl,imx8ulp-gpio";
++			reg = <0x43830000 0x1000>;
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+-			interrupts = <GIC_SPI 189 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts = <GIC_SPI 189 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 190 IRQ_TYPE_LEVEL_HIGH>;
+ 			interrupt-controller;
+ 			#interrupt-cells = <2>;
+ 			clocks = <&clk IMX93_CLK_GPIO4_GATE>,
+@@ -869,12 +1414,13 @@ gpio4: gpio@43830080 {
+ 			gpio-ranges = <&iomuxc 0 38 28>, <&iomuxc 28 36 2>;
+ 		};
+ 
+-		gpio1: gpio@47400080 {
+-			compatible = "fsl,imx93-gpio", "fsl,imx7ulp-gpio";
+-			reg = <0x47400080 0x1000>, <0x47400040 0x40>;
++		gpio1: gpio@47400000 {
++			compatible = "fsl,imx93-gpio", "fsl,imx8ulp-gpio";
++			reg = <0x47400000 0x1000>;
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+-			interrupts = <GIC_SPI 10 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts = <GIC_SPI 10 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
+ 			interrupt-controller;
+ 			#interrupt-cells = <2>;
+ 			clocks = <&clk IMX93_CLK_GPIO1_GATE>,
+@@ -884,10 +1430,28 @@ gpio1: gpio@47400080 {
+ 		};
+ 
+ 		ocotp: efuse@47510000 {
+-			compatible = "fsl,imx93-ocotp", "syscon";
++			compatible = "fsl,imx93-ocotp", "syscon", "simple-mfd";
+ 			reg = <0x47510000 0x10000>;
+ 			#address-cells = <1>;
+ 			#size-cells = <1>;
++
++			imx93_uid: soc-uid@c0 {
++				reg = <0xc0 0x10>;
++			};
++
++			eth_mac1: mac-address@4ec {
++				reg = <0x4ec 0x6>;
++			};
++
++			eth_mac2: mac-address@4f2 {
++				reg = <0x4f2 0x6>;
++			};
++
++			imx93_soc: imx93-soc {
++				compatible = "fsl,imx93-soc";
++				nvmem-cells = <&imx93_uid>;
++				nvmem-cell-names = "soc_unique_id";
++			};
+ 		};
+ 
+ 		s4muap: mailbox@47520000 {
+@@ -900,8 +1464,8 @@ s4muap: mailbox@47520000 {
+ 		};
+ 
+ 		media_blk_ctrl: system-controller@4ac10000 {
+-			compatible = "fsl,imx93-media-blk-ctrl", "syscon";
+-			reg = <0x4ac10000 0x10000>;
++			compatible = "fsl,imx93-media-blk-ctrl", "syscon", "simple-mfd";
++			reg = <0x4ac10000 0x70>;
+ 			power-domains = <&mediamix>;
+ 			clocks = <&clk IMX93_CLK_MEDIA_APB>,
+ 				 <&clk IMX93_CLK_MEDIA_AXI>,
+@@ -916,13 +1480,278 @@ media_blk_ctrl: system-controller@4ac10000 {
+ 			clock-names = "apb", "axi", "nic", "disp", "cam",
+ 				      "pxp", "lcdif", "isi", "csi", "dsi";
+ 			#power-domain-cells = <1>;
++
++			dphy: dphy {
++				compatible = "fsl,imx93-mipi-dphy";
++				clocks = <&clk IMX93_CLK_MIPI_PHY_CFG>,
++					 <&clk IMX93_CLK_24M>;
++				clock-names = "phy_cfg", "phy_ref";
++				assigned-clocks = <&clk IMX93_CLK_MIPI_PHY_CFG>;
++				assigned-clock-parents = <&clk IMX93_CLK_24M>;
++				assigned-clock-rates = <24000000>;
++				#phy-cells = <0>;
++				power-domains = <&media_blk_ctrl IMX93_MEDIABLK_PD_MIPI_DSI>;
++				status = "disabled";
++			};
++
++			parallel_disp_fmt: dpi {
++				compatible = "fsl,imx93-parallel-display-format";
++				power-domains = <&mediamix>;
++				status = "disabled";
++
++				ports {
++					#address-cells = <1>;
++					#size-cells = <0>;
++
++					port@0 {
++						reg = <0>;
++
++						dpi_to_lcdif: endpoint {
++							remote-endpoint = <&lcdif_to_dpi>;
++						};
++					};
++
++					port@1 {
++						reg = <1>;
++						endpoint {
++						};
++					};
++				};
++			};
++		};
++
++		ddr: memory-controller@4e300000 {
++			compatible = "nxp,imx9-memory-controller", "simple-mfd";
++			reg = <0x4e300000 0x2000>;
++			interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_HIGH>;
++			little-endian;
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++
++			ddr-pmu@4e300dc0 {
++				compatible = "fsl,imx93-ddr-pmu";
++				reg = <0x4e300dc0 0x200>;
++				interrupts = <GIC_SPI 90 IRQ_TYPE_LEVEL_HIGH>;
++			};
++		};
++
++		dsi: dsi@4ae10000 {
++			compatible = "fsl,imx93-mipi-dsi";
++			reg = <0x4ae10000 0x4000>;
++			interrupts = <GIC_SPI 177 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&clk IMX93_CLK_MIPI_TEST_BYTE>,
++				 <&clk IMX93_CLK_MIPI_DSI_GATE>,
++				 <&clk IMX93_CLK_MEDIA_DISP_PIX>;
++			clock-names = "byte", "pclk", "pixel";
++			assigned-clocks = <&clk IMX93_CLK_MIPI_TEST_BYTE>,
++					  <&clk IMX93_CLK_MEDIA_APB>;
++			assigned-clock-parents = <&clk IMX93_CLK_SYS_PLL_PFD0>,
++						 <&clk IMX93_CLK_SYS_PLL_PFD1_DIV2>;
++			assigned-clock-rates = <20000000>, <133333333>;
++			phys = <&dphy>;
++			phy-names = "dphy";
++			power-domains = <&media_blk_ctrl IMX93_MEDIABLK_PD_MIPI_DSI>;
++			status = "disabled";
++
++			ports {
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				port@0 {
++					reg = <0>;
++
++					dsi_to_lcdif: endpoint {
++						remote-endpoint = <&lcdif_to_dsi>;
++					};
++				};
++
++				port@1 {
++					reg = <1>;
++					endpoint {
++					};
++				};
++			};
++		};
++
++		lcdif: lcd-controller@4ae30000 {
++			compatible = "fsl,imx93-lcdif";
++			reg = <0x4ae30000 0x10000>;
++			interrupts = <GIC_SPI 176 IRQ_TYPE_LEVEL_HIGH>;
++			fsl,gpr = <&media_blk_ctrl>;
++			clocks = <&clk IMX93_CLK_MEDIA_DISP_PIX>,
++				 <&clk IMX93_CLK_MEDIA_AXI>,
++				 <&clk IMX93_CLK_LCDIF_GATE>;
++			clock-names = "pix", "disp-axi", "disp-apb";
++			assigned-clocks = <&clk IMX93_CLK_VIDEO_PLL>,
++					  <&clk IMX93_CLK_MEDIA_DISP_PIX>,
++					  <&clk IMX93_CLK_MEDIA_AXI>,
++					  <&clk IMX93_CLK_MEDIA_APB>;
++			assigned-clock-parents = <&clk IMX93_CLK_24M>,
++						 <&clk IMX93_CLK_VIDEO_PLL>,
++						 <&clk IMX93_CLK_SYS_PLL_PFD1>,
++						 <&clk IMX93_CLK_SYS_PLL_PFD1_DIV2>;
++			power-domains = <&media_blk_ctrl IMX93_MEDIABLK_PD_LCDIF>;
++			status = "disabled";
++
++			lcdif_disp: port {
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				lcdif_to_dsi: endpoint@0 {
++					reg = <0>;
++					remote-endpoint = <&dsi_to_lcdif>;
++				};
++
++				lcdif_to_ldb: endpoint@1 {
++					reg = <1>;
++					remote-endpoint = <&ldb_ch0>;
++				};
++
++				lcdif_to_dpi: endpoint@2 {
++					reg = <2>;
++					remote-endpoint = <&dpi_to_lcdif>;
++				};
++			};
++		};
++
++		usbotg1: usb@4c100000 {
++			compatible = "fsl,imx8mm-usb", "fsl,imx7d-usb";
++			reg = <0x4c100000 0x200>;
++			interrupts = <GIC_SPI 187 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&clk IMX93_CLK_USB_CONTROLLER_GATE>,
++				 <&clk IMX93_CLK_HSIO_32K_GATE>;
++			clock-names = "usb_ctrl_root_clk", "usb_wakeup_clk";
++			assigned-clocks = <&clk IMX93_CLK_HSIO>;
++			assigned-clock-parents = <&clk IMX93_CLK_SYS_PLL_PFD1_DIV2>;
++			assigned-clock-rates = <133000000>;
++			fsl,usbphy = <&usbphynop1>;
++			fsl,usbmisc = <&usbmisc1 0>;
++			status = "disabled";
++		};
++
++		usbmisc1: usbmisc@4c100200 {
++			compatible = "fsl,imx8mm-usbmisc", "fsl,imx7d-usbmisc";
++			#index-cells = <1>;
++			reg = <0x4c100200 0x200>;
++		};
++
++		usbotg2: usb@4c200000 {
++			compatible = "fsl,imx8mm-usb", "fsl,imx7d-usb";
++			reg = <0x4c200000 0x200>;
++			interrupts = <GIC_SPI 188 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&clk IMX93_CLK_USB_CONTROLLER_GATE>,
++				 <&clk IMX93_CLK_HSIO_32K_GATE>;
++			clock-names = "usb_ctrl_root_clk", "usb_wakeup_clk";
++			assigned-clocks = <&clk IMX93_CLK_HSIO>;
++			assigned-clock-parents = <&clk IMX93_CLK_SYS_PLL_PFD1_DIV2>;
++			assigned-clock-rates = <133000000>;
++			fsl,usbphy = <&usbphynop2>;
++			fsl,usbmisc = <&usbmisc2 0>;
++			status = "disabled";
++		};
++
++		usbmisc2: usbmisc@4c200200 {
++			compatible = "fsl,imx8mm-usbmisc", "fsl,imx7d-usbmisc";
++			#index-cells = <1>;
++			reg = <0x4c200200 0x200>;
++		};
++
++		ddrmix_blk_ctrl: blk-ctrl@4e010000 {
++			compatible = "nxp,blk-ctrl-ddrmix", "syscon", "simple-mfd";
++			reg = <0x4e010000 0x1000>;
++		};
++	};
++
++	display-subsystem {
++		compatible = "fsl,imx-display-subsystem";
++		ports = <&lcdif_disp>;
++	};
++
++	mqs1: mqs1 {
++		compatible = "fsl,imx93-mqs";
++		gpr = <&aonmix_ns_gpr>;
++		status = "disabled";
++	};
++
++	mqs2: mqs2 {
++		compatible = "fsl,imx93-mqs";
++		gpr = <&wakeupmix_gpr>;
++		status = "disabled";
++	};
++
++	ldb: ldb-display-controller {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "fsl,imx93-ldb";
++		clocks = <&clk IMX93_CLK_LVDS_GATE>;
++		clock-names = "ldb";
++		assigned-clocks = <&clk IMX93_CLK_MEDIA_LDB>;
++		assigned-clock-parents = <&clk IMX93_CLK_VIDEO_PLL>;
++		gpr = <&media_blk_ctrl>;
++		power-domains = <&mediamix>;
++		status = "disabled";
++
++		lvds-channel@0 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <0>;
++			phys = <&ldb_phy1>;
++			phy-names = "ldb_phy";
+ 			status = "disabled";
++
++			port@0 {
++				reg = <0>;
++
++				ldb_ch0: endpoint {
++					remote-endpoint = <&lcdif_to_ldb>;
++				};
++			};
++
++			port@1 {
++				reg = <1>;
++				endpoint {
++				};
++			};
+ 		};
++	};
++
++	ldb_phy: ldb-phy {
++		compatible = "fsl,imx93-lvds-phy";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		gpr = <&media_blk_ctrl>;
++		clocks = <&clk IMX93_CLK_MEDIA_APB>;
++		clock-names = "apb";
++		power-domains = <&mediamix>;
++		status = "disabled";
+ 
+-		ddr-pmu@4e300dc0 {
+-			compatible = "fsl,imx93-ddr-pmu";
+-			reg = <0x4e300dc0 0x200>;
+-			interrupts = <GIC_SPI 90 IRQ_TYPE_LEVEL_HIGH>;
++		ldb_phy1: port@0 {
++			reg = <0>;
++			#phy-cells = <0>;
+ 		};
+ 	};
++
++	lpm: imx93-lpm {
++		compatible = "nxp,imx93-lpm";
++		regmap = <&ddrmix_blk_ctrl>;
++		clocks = <&clk IMX93_CLK_M33>, <&clk IMX93_CLK_WAKEUP_AXI>,
++			 <&clk IMX93_CLK_NIC_AXI>, <&clk IMX93_CLK_MEDIA_AXI>,
++			 <&clk IMX93_CLK_A55_PERIPH>, <&clk IMX93_CLK_A55_CORE>, <&clk IMX93_CLK_ML>,
++			 <&clk IMX93_CLK_SYS_PLL_PFD0>, <&clk IMX93_CLK_SYS_PLL_PFD0_DIV2>,
++			 <&clk IMX93_CLK_SYS_PLL_PFD1>, <&clk IMX93_CLK_SYS_PLL_PFD1_DIV2>,
++			 <&clk IMX93_CLK_SYS_PLL_PFD2>, <&clk IMX93_CLK_SYS_PLL_PFD2_DIV2>;
++		clock-names = "m33_root", "wakeup_axi", "nic_axi", "media_axi", "a55_periph",
++			      "a55_core", "ml_axi", "sys_pll_pfd0", "sys_pll_pfd0_div2",
++			      "sys_pll_pfd1", "sys_pll_pfd1_div2", "sys_pll_pfd2",
++			      "sys_pll_pfd2_div2";
++		status = "disabled";
++	};
++
++	ele_fw2: se-fw2 {
++		compatible = "fsl,imx93-se-fw";
++		mbox-names = "tx", "rx";
++		mboxes = <&s4muap 0 0>,
++			<&s4muap 1 0>;
++	};
+ };
+diff --git a/arch/arm64/configs/imx9_phytec_defconfig b/arch/arm64/configs/imx9_phytec_defconfig
+new file mode 100644
+index 000000000..803f4e515
+--- /dev/null
++++ b/arch/arm64/configs/imx9_phytec_defconfig
+@@ -0,0 +1,1176 @@
++CONFIG_SYSVIPC=y
++CONFIG_POSIX_MQUEUE=y
++CONFIG_NO_HZ_IDLE=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_BPF_SYSCALL=y
++CONFIG_BPF_JIT=y
++CONFIG_PREEMPT=y
++CONFIG_IRQ_TIME_ACCOUNTING=y
++CONFIG_BSD_PROCESS_ACCT=y
++CONFIG_BSD_PROCESS_ACCT_V3=y
++CONFIG_TASKSTATS=y
++CONFIG_TASK_XACCT=y
++CONFIG_TASK_IO_ACCOUNTING=y
++CONFIG_IKCONFIG=y
++CONFIG_IKCONFIG_PROC=y
++CONFIG_NUMA_BALANCING=y
++CONFIG_MEMCG=y
++CONFIG_BLK_CGROUP=y
++CONFIG_CGROUP_PIDS=y
++CONFIG_CGROUP_FREEZER=y
++CONFIG_CGROUP_HUGETLB=y
++CONFIG_CPUSETS=y
++CONFIG_CGROUP_DEVICE=y
++CONFIG_CGROUP_CPUACCT=y
++CONFIG_CGROUP_PERF=y
++CONFIG_CGROUP_BPF=y
++CONFIG_USER_NS=y
++CONFIG_SCHED_AUTOGROUP=y
++CONFIG_RELAY=y
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_KALLSYMS_ALL=y
++CONFIG_PROFILING=y
++CONFIG_KEXEC=y
++CONFIG_KEXEC_FILE=y
++CONFIG_CRASH_DUMP=y
++CONFIG_ARCH_KEEMBAY=y
++CONFIG_ARCH_NXP=y
++CONFIG_ARCH_LAYERSCAPE=y
++CONFIG_ARCH_MXC=y
++CONFIG_ARCH_S32=y
++CONFIG_SOC_S32V234=y
++CONFIG_ARM64_VA_BITS_48=y
++CONFIG_SCHED_MC=y
++CONFIG_SCHED_SMT=y
++CONFIG_NUMA=y
++CONFIG_XEN=y
++CONFIG_ARCH_FORCE_MAX_ORDER=13
++CONFIG_COMPAT=y
++CONFIG_RANDOMIZE_BASE=y
++CONFIG_PM_DEBUG=y
++CONFIG_PM_TEST_SUSPEND=y
++CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
++CONFIG_ENERGY_MODEL=y
++CONFIG_ARM_PSCI_CPUIDLE=y
++CONFIG_CPU_FREQ=y
++CONFIG_CPU_FREQ_STAT=y
++CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
++CONFIG_CPU_FREQ_GOV_POWERSAVE=y
++CONFIG_CPU_FREQ_GOV_USERSPACE=y
++CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
++CONFIG_CPU_FREQ_GOV_SCHEDUTIL=y
++CONFIG_CPUFREQ_DT=y
++CONFIG_ACPI_CPPC_CPUFREQ=m
++CONFIG_ARM_SCPI_CPUFREQ=y
++CONFIG_ARM_IMX_CPUFREQ_DT=y
++CONFIG_ARM_SCMI_CPUFREQ=y
++CONFIG_QORIQ_CPUFREQ=y
++CONFIG_ACPI=y
++CONFIG_ACPI_APEI=y
++CONFIG_ACPI_APEI_GHES=y
++CONFIG_ACPI_APEI_MEMORY_FAILURE=y
++CONFIG_ACPI_APEI_EINJ=y
++CONFIG_VIRTUALIZATION=y
++CONFIG_KVM=y
++CONFIG_JUMP_LABEL=y
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++CONFIG_MODVERSIONS=y
++# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
++# CONFIG_COMPAT_BRK is not set
++CONFIG_KSM=y
++CONFIG_MEMORY_FAILURE=y
++CONFIG_TRANSPARENT_HUGEPAGE=y
++CONFIG_NET=y
++CONFIG_PACKET=y
++CONFIG_TLS=y
++CONFIG_TLS_DEVICE=y
++CONFIG_IP_MULTICAST=y
++CONFIG_IP_PNP=y
++CONFIG_IP_PNP_DHCP=y
++CONFIG_IP_PNP_BOOTP=y
++CONFIG_IPV6_SIT=m
++CONFIG_NETFILTER=y
++CONFIG_BRIDGE_NETFILTER=m
++CONFIG_NETFILTER_NETLINK_OSF=m
++CONFIG_NF_CONNTRACK=m
++CONFIG_NF_CONNTRACK_EVENTS=y
++CONFIG_NF_TABLES=y
++CONFIG_NF_TABLES_INET=y
++CONFIG_NF_TABLES_NETDEV=y
++CONFIG_NFT_CT=m
++CONFIG_NFT_MASQ=m
++CONFIG_NFT_NAT=m
++CONFIG_NFT_COMPAT=m
++CONFIG_NFT_DUP_NETDEV=m
++CONFIG_NFT_FWD_NETDEV=m
++CONFIG_NF_FLOW_TABLE=m
++CONFIG_NETFILTER_XT_MARK=m
++CONFIG_NETFILTER_XT_TARGET_CHECKSUM=m
++CONFIG_NETFILTER_XT_TARGET_LOG=m
++CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=m
++CONFIG_NETFILTER_XT_MATCH_CONNTRACK=m
++CONFIG_NETFILTER_XT_MATCH_IPVS=m
++CONFIG_IP_VS=m
++CONFIG_NF_SOCKET_IPV4=m
++CONFIG_NF_TPROXY_IPV4=m
++CONFIG_IP_NF_IPTABLES=m
++CONFIG_IP_NF_FILTER=m
++CONFIG_IP_NF_TARGET_REJECT=m
++CONFIG_IP_NF_NAT=m
++CONFIG_IP_NF_TARGET_MASQUERADE=m
++CONFIG_IP_NF_MANGLE=m
++CONFIG_NF_SOCKET_IPV6=m
++CONFIG_NF_TPROXY_IPV6=m
++CONFIG_IP6_NF_IPTABLES=m
++CONFIG_IP6_NF_FILTER=m
++CONFIG_IP6_NF_TARGET_REJECT=m
++CONFIG_IP6_NF_MANGLE=m
++CONFIG_IP6_NF_NAT=m
++CONFIG_IP6_NF_TARGET_MASQUERADE=m
++CONFIG_NF_TABLES_BRIDGE=m
++CONFIG_BRIDGE_NF_EBTABLES=m
++CONFIG_BRIDGE=y
++CONFIG_BRIDGE_VLAN_FILTERING=y
++CONFIG_NET_DSA=m
++CONFIG_VLAN_8021Q_GVRP=y
++CONFIG_VLAN_8021Q_MVRP=y
++CONFIG_LLC2=y
++CONFIG_NET_SCHED=y
++CONFIG_NET_SCH_MULTIQ=y
++CONFIG_NET_SCH_CBS=y
++CONFIG_NET_SCH_ETF=y
++CONFIG_NET_SCH_TAPRIO=y
++CONFIG_NET_SCH_MQPRIO=y
++CONFIG_NET_SCH_INGRESS=y
++CONFIG_NET_CLS_BASIC=y
++CONFIG_NET_CLS_U32=y
++CONFIG_NET_CLS_FLOWER=y
++CONFIG_NET_CLS_ACT=y
++CONFIG_NET_ACT_POLICE=y
++CONFIG_NET_ACT_GACT=m
++CONFIG_NET_ACT_MIRRED=m
++CONFIG_NET_ACT_SKBEDIT=y
++CONFIG_NET_ACT_GATE=y
++CONFIG_TSN=y
++CONFIG_VSOCKETS=y
++CONFIG_VIRTIO_VSOCKETS=y
++CONFIG_QRTR=m
++CONFIG_QRTR_SMD=m
++CONFIG_QRTR_TUN=m
++CONFIG_NET_PKTGEN=m
++CONFIG_CAN=m
++CONFIG_BT=y
++CONFIG_BT_RFCOMM=y
++CONFIG_BT_RFCOMM_TTY=y
++CONFIG_BT_BNEP=y
++CONFIG_BT_BNEP_MC_FILTER=y
++CONFIG_BT_BNEP_PROTO_FILTER=y
++CONFIG_BT_HIDP=y
++CONFIG_BT_LEDS=y
++# CONFIG_BT_DEBUGFS is not set
++CONFIG_BT_HCIBTUSB=m
++CONFIG_BT_HCIUART=y
++CONFIG_BT_HCIUART_BCSP=y
++CONFIG_BT_HCIUART_ATH3K=y
++CONFIG_BT_HCIUART_LL=y
++CONFIG_BT_HCIUART_3WIRE=y
++CONFIG_BT_HCIUART_BCM=y
++CONFIG_BT_HCIUART_QCA=y
++CONFIG_BT_HCIVHCI=y
++CONFIG_BT_NXPUART=m
++CONFIG_CFG80211=y
++CONFIG_NL80211_TESTMODE=y
++CONFIG_CFG80211_WEXT=y
++CONFIG_MAC80211=y
++CONFIG_MAC80211_LEDS=y
++CONFIG_NET_9P=y
++CONFIG_NET_9P_VIRTIO=y
++CONFIG_NFC=m
++CONFIG_NFC_NCI=m
++CONFIG_NFC_S3FWRN5_I2C=m
++CONFIG_PCI=y
++CONFIG_PCIEPORTBUS=y
++CONFIG_PCI_IOV=y
++CONFIG_PCI_PASID=y
++CONFIG_HOTPLUG_PCI=y
++CONFIG_HOTPLUG_PCI_ACPI=y
++CONFIG_PCIE_ALTERA=y
++CONFIG_PCIE_ALTERA_MSI=y
++CONFIG_PCI_HOST_THUNDER_PEM=y
++CONFIG_PCI_HOST_THUNDER_ECAM=y
++CONFIG_PCI_HOST_GENERIC=y
++CONFIG_PCI_XGENE=y
++CONFIG_PCI_NXP_RPMSG=y
++CONFIG_PCI_MESON=m
++CONFIG_PCI_IMX6_HOST=y
++CONFIG_PCI_IMX6_EP=y
++CONFIG_PCI_LAYERSCAPE=y
++CONFIG_PCI_HISI=y
++CONFIG_PCIE_KIRIN=y
++CONFIG_PCIE_LAYERSCAPE_GEN4=y
++CONFIG_PCI_ENDPOINT=y
++CONFIG_PCI_ENDPOINT_CONFIGFS=y
++CONFIG_PCI_EPF_TEST=y
++CONFIG_DEVTMPFS=y
++CONFIG_DEVTMPFS_MOUNT=y
++CONFIG_FW_LOADER_USER_HELPER=y
++CONFIG_FW_LOADER_USER_HELPER_FALLBACK=y
++CONFIG_BRCMSTB_GISB_ARB=y
++CONFIG_VEXPRESS_CONFIG=y
++CONFIG_FSL_MC_UAPI_SUPPORT=y
++CONFIG_ARM_SCMI_PROTOCOL=y
++CONFIG_ARM_SCMI_POWER_CONTROL=y
++CONFIG_IMX_SCMI_BBM_CONTROL=y
++CONFIG_IMX_SCMI_MISC_CONTROL=y
++CONFIG_ARM_SCPI_PROTOCOL=y
++CONFIG_EFI_CAPSULE_LOADER=y
++CONFIG_IMX_DSP=y
++CONFIG_IMX_SCU=y
++CONFIG_IMX_SCU_PD=y
++CONFIG_IMX_SEC_ENCLAVE=y
++CONFIG_IMX_ISPMU=m
++CONFIG_GNSS=m
++CONFIG_GNSS_MTK_SERIAL=m
++CONFIG_MTD=y
++CONFIG_MTD_CMDLINE_PARTS=y
++CONFIG_MTD_BLOCK=y
++CONFIG_MTD_CFI=y
++CONFIG_MTD_CFI_ADV_OPTIONS=y
++CONFIG_MTD_CFI_INTELEXT=y
++CONFIG_MTD_CFI_AMDSTD=y
++CONFIG_MTD_CFI_STAA=y
++CONFIG_MTD_PHYSMAP=y
++CONFIG_MTD_PHYSMAP_OF=y
++CONFIG_MTD_DATAFLASH=y
++CONFIG_MTD_SST25L=y
++CONFIG_MTD_RAW_NAND=y
++CONFIG_MTD_NAND_DENALI_DT=y
++CONFIG_MTD_NAND_GPMI_NAND=y
++CONFIG_MTD_NAND_FSL_IFC=y
++CONFIG_MTD_SPI_NAND=y
++CONFIG_MTD_SPI_NOR=y
++# CONFIG_MTD_SPI_NOR_USE_4K_SECTORS is not set
++CONFIG_MTD_UBI=y
++CONFIG_BLK_DEV_LOOP=y
++CONFIG_BLK_DEV_NBD=m
++CONFIG_XEN_BLKDEV_BACKEND=m
++CONFIG_VIRTIO_BLK=y
++CONFIG_BLK_DEV_NVME=y
++CONFIG_SRAM=y
++CONFIG_PCI_ENDPOINT_TEST=y
++CONFIG_EEPROM_AT24=y
++CONFIG_EEPROM_AT25=m
++CONFIG_UACCE=m
++# CONFIG_SCSI_PROC_FS is not set
++CONFIG_BLK_DEV_SD=y
++CONFIG_SCSI_SAS_ATA=y
++CONFIG_SCSI_HISI_SAS=y
++CONFIG_SCSI_HISI_SAS_PCI=y
++CONFIG_MEGARAID_SAS=y
++CONFIG_SCSI_MPT3SAS=m
++CONFIG_ATA=y
++CONFIG_SATA_AHCI=y
++CONFIG_SATA_AHCI_PLATFORM=y
++CONFIG_AHCI_IMX=y
++CONFIG_AHCI_CEVA=y
++CONFIG_AHCI_QORIQ=y
++CONFIG_SATA_SIL24=y
++CONFIG_PATA_OF_PLATFORM=y
++CONFIG_MD=y
++CONFIG_BLK_DEV_MD=m
++CONFIG_BLK_DEV_DM=m
++CONFIG_DM_CRYPT=m
++CONFIG_DM_MIRROR=m
++CONFIG_DM_ZERO=m
++CONFIG_NETDEVICES=y
++CONFIG_MACVLAN=m
++CONFIG_MACVTAP=m
++CONFIG_TUN=y
++CONFIG_VETH=m
++CONFIG_VIRTIO_NET=y
++CONFIG_NET_DSA_MSCC_FELIX=m
++CONFIG_NET_DSA_SJA1105=m
++CONFIG_NET_DSA_SJA1105_PTP=y
++CONFIG_NET_DSA_SJA1105_TAS=y
++CONFIG_NET_DSA_SJA1105_VL=y
++CONFIG_AMD_XGBE=y
++CONFIG_ATL1C=m
++CONFIG_BCMGENET=m
++CONFIG_BNX2X=m
++CONFIG_SYSTEMPORT=m
++CONFIG_MACB=y
++CONFIG_THUNDER_NIC_PF=y
++CONFIG_FEC=y
++CONFIG_FEC_UIO=y
++CONFIG_FSL_FMAN=y
++CONFIG_FSL_DPAA_ETH=y
++CONFIG_FSL_DPAA2_ETH=y
++CONFIG_FSL_DPAA2_MAC=y
++CONFIG_FSL_DPAA2_SWITCH=y
++CONFIG_FSL_ENETC=y
++CONFIG_FSL_ENETC4=y
++CONFIG_FSL_ENETC_VF=y
++CONFIG_FSL_NETC_PRB_IERB=y
++CONFIG_FSL_ENETC_QOS=y
++CONFIG_FSL_NTMP=y
++CONFIG_HIX5HD2_GMAC=y
++CONFIG_HNS_DSAF=y
++CONFIG_HNS_ENET=y
++CONFIG_HNS3=y
++CONFIG_HNS3_HCLGE=y
++CONFIG_HNS3_ENET=y
++CONFIG_E1000=y
++CONFIG_E1000E=y
++CONFIG_IGB=y
++CONFIG_IGBVF=y
++CONFIG_MVMDIO=y
++CONFIG_SKY2=y
++CONFIG_MLX4_EN=m
++CONFIG_MLX5_CORE=m
++CONFIG_MLX5_CORE_EN=y
++CONFIG_MSCC_OCELOT_SWITCH=y
++CONFIG_QCOM_EMAC=m
++CONFIG_RMNET=m
++CONFIG_SMC91X=y
++CONFIG_SMSC911X=y
++CONFIG_STMMAC_ETH=y
++CONFIG_DWMAC_GENERIC=m
++CONFIG_AQUANTIA_PHY=y
++CONFIG_BROADCOM_PHY=m
++CONFIG_BCM54140_PHY=m
++CONFIG_MARVELL_PHY=m
++CONFIG_MARVELL_10G_PHY=m
++CONFIG_MICREL_PHY=y
++CONFIG_MICROSEMI_PHY=y
++CONFIG_NXP_C45_TJA11XX_PHY=y
++CONFIG_NXP_TJA11XX_PHY=y
++CONFIG_AT803X_PHY=y
++CONFIG_REALTEK_PHY=y
++CONFIG_ROCKCHIP_PHY=y
++CONFIG_DP83822_PHY=y
++CONFIG_DP83867_PHY=y
++CONFIG_VITESSE_PHY=y
++CONFIG_CAN_FLEXCAN=m
++CONFIG_MDIO_BITBANG=y
++CONFIG_MDIO_BUS_MUX_MULTIPLEXER=y
++CONFIG_MDIO_BUS_MUX_MMIOREG=y
++CONFIG_USB_PEGASUS=m
++CONFIG_USB_RTL8150=m
++CONFIG_USB_RTL8152=y
++CONFIG_USB_LAN78XX=m
++CONFIG_USB_USBNET=y
++CONFIG_USB_NET_AX8817X=m
++CONFIG_USB_NET_AX88179_178A=m
++CONFIG_USB_NET_CDCETHER=m
++CONFIG_USB_NET_CDC_NCM=m
++CONFIG_USB_NET_DM9601=m
++CONFIG_USB_NET_SR9800=m
++CONFIG_USB_NET_SMSC75XX=m
++CONFIG_USB_NET_SMSC95XX=m
++CONFIG_USB_NET_NET1080=m
++CONFIG_USB_NET_PLUSB=m
++CONFIG_USB_NET_MCS7830=m
++CONFIG_USB_NET_CDC_SUBSET=m
++CONFIG_USB_NET_ZAURUS=m
++CONFIG_BRCMFMAC=m
++CONFIG_HOSTAP=y
++CONFIG_WL18XX=m
++CONFIG_WLCORE_SDIO=m
++CONFIG_XEN_NETDEV_BACKEND=m
++CONFIG_IVSHMEM_NET=y
++CONFIG_INPUT_EVDEV=y
++CONFIG_KEYBOARD_ADC=m
++CONFIG_KEYBOARD_GPIO=y
++CONFIG_KEYBOARD_RPMSG=y
++CONFIG_KEYBOARD_SNVS_PWRKEY=y
++CONFIG_KEYBOARD_IMX_SC_KEY=y
++CONFIG_KEYBOARD_CROS_EC=y
++CONFIG_INPUT_TOUCHSCREEN=y
++CONFIG_TOUCHSCREEN_ATMEL_MXT=m
++CONFIG_TOUCHSCREEN_EXC3000=m
++CONFIG_TOUCHSCREEN_GOODIX=m
++CONFIG_TOUCHSCREEN_EDT_FT5X06=m
++CONFIG_TOUCHSCREEN_FTS=m
++CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_I2C=m
++CONFIG_INPUT_MISC=y
++CONFIG_INPUT_BBNSM_PWRKEY=y
++CONFIG_INPUT_PWM_BEEPER=m
++CONFIG_INPUT_PWM_VIBRA=m
++# CONFIG_SERIO_SERPORT is not set
++CONFIG_SERIO_AMBAKMI=y
++CONFIG_LEGACY_PTY_COUNT=16
++CONFIG_SERIAL_8250=y
++CONFIG_SERIAL_8250_CONSOLE=y
++CONFIG_SERIAL_8250_EXTENDED=y
++CONFIG_SERIAL_8250_SHARE_IRQ=y
++CONFIG_SERIAL_8250_DW=y
++CONFIG_SERIAL_OF_PLATFORM=y
++CONFIG_SERIAL_AMBA_PL011=y
++CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
++CONFIG_SERIAL_IMX=y
++CONFIG_SERIAL_IMX_CONSOLE=y
++CONFIG_SERIAL_XILINX_PS_UART=y
++CONFIG_SERIAL_XILINX_PS_UART_CONSOLE=y
++CONFIG_SERIAL_FSL_LPUART=y
++CONFIG_SERIAL_FSL_LPUART_CONSOLE=y
++CONFIG_SERIAL_FSL_LINFLEXUART=y
++CONFIG_SERIAL_FSL_LINFLEXUART_CONSOLE=y
++CONFIG_RPMSG_TTY=m
++CONFIG_SERIAL_DEV_BUS=y
++CONFIG_VIRTIO_CONSOLE=y
++CONFIG_IPMI_HANDLER=m
++CONFIG_IPMI_DEVICE_INTERFACE=m
++CONFIG_IPMI_SI=m
++CONFIG_TCG_TPM=y
++CONFIG_TCG_TIS_I2C_INFINEON=y
++CONFIG_I2C_CHARDEV=y
++CONFIG_I2C_MUX=y
++CONFIG_I2C_MUX_GPIO=y
++CONFIG_I2C_MUX_PCA954x=y
++CONFIG_I2C_DESIGNWARE_PLATFORM=y
++CONFIG_I2C_GPIO=m
++CONFIG_I2C_IMX=y
++CONFIG_I2C_IMX_LPI2C=y
++CONFIG_I2C_RK3X=y
++CONFIG_I2C_RPBUS=y
++CONFIG_I2C_CROS_EC_TUNNEL=y
++CONFIG_I2C_SLAVE_EEPROM=y
++CONFIG_I3C=y
++CONFIG_SVC_I3C_MASTER=y
++CONFIG_SPI=y
++CONFIG_SPI_CADENCE_QUADSPI=y
++CONFIG_SPI_DESIGNWARE=m
++CONFIG_SPI_DW_DMA=y
++CONFIG_SPI_DW_MMIO=m
++CONFIG_SPI_FSL_LPSPI=y
++CONFIG_SPI_FSL_QUADSPI=y
++CONFIG_SPI_NXP_FLEXSPI=y
++CONFIG_SPI_IMX=y
++CONFIG_SPI_FSL_DSPI=y
++CONFIG_SPI_PL022=y
++CONFIG_SPI_SPIDEV=y
++CONFIG_SPI_SLAVE=y
++CONFIG_SPI_SLAVE_TIME=y
++CONFIG_SPI_SLAVE_SYSTEM_CONTROL=y
++CONFIG_SPMI=y
++CONFIG_PPS_CLIENT_GPIO=y
++CONFIG_PINCTRL_MAX77620=y
++CONFIG_PINCTRL_SCMI=y
++CONFIG_PINCTRL_SINGLE=y
++CONFIG_PINCTRL_IMX8MM=y
++CONFIG_PINCTRL_IMX8MN=y
++CONFIG_PINCTRL_IMX8MP=y
++CONFIG_PINCTRL_IMX8MQ=y
++CONFIG_PINCTRL_IMX8QM=y
++CONFIG_PINCTRL_IMX8QXP=y
++CONFIG_PINCTRL_IMX8DXL=y
++CONFIG_PINCTRL_IMX8ULP=y
++CONFIG_PINCTRL_IMX93=y
++CONFIG_PINCTRL_S32V234=y
++CONFIG_GPIO_ALTERA=m
++CONFIG_GPIO_DWAPB=y
++CONFIG_GPIO_IMX_RPMSG=y
++CONFIG_GPIO_MB86S7X=y
++CONFIG_GPIO_MPC8XXX=y
++CONFIG_GPIO_MXC=y
++CONFIG_GPIO_PL061=y
++CONFIG_GPIO_WCD934X=m
++CONFIG_GPIO_XGENE=y
++CONFIG_GPIO_MAX732X=y
++CONFIG_GPIO_PCA953X=y
++CONFIG_GPIO_PCA953X_IRQ=y
++CONFIG_GPIO_ADP5585=y
++CONFIG_GPIO_BD9571MWV=m
++CONFIG_GPIO_MAX77620=y
++CONFIG_GPIO_SL28CPLD=m
++CONFIG_POWER_RESET_BRCMSTB=y
++CONFIG_POWER_RESET_XGENE=y
++CONFIG_POWER_RESET_SYSCON=y
++CONFIG_SYSCON_REBOOT_MODE=y
++CONFIG_BATTERY_SBS=m
++CONFIG_BATTERY_BQ27XXX=y
++CONFIG_BATTERY_MAX17042=m
++CONFIG_CHARGER_BQ25890=m
++CONFIG_CHARGER_BQ25980=m
++CONFIG_SENSORS_ARM_SCMI=y
++CONFIG_SENSORS_ARM_SCPI=y
++CONFIG_SENSORS_FP9931=y
++CONFIG_SENSORS_LM90=m
++CONFIG_SENSORS_PWM_FAN=m
++CONFIG_SENSORS_SL28CPLD=m
++CONFIG_SENSORS_INA2XX=m
++CONFIG_SENSORS_INA3221=m
++CONFIG_THERMAL_WRITABLE_TRIPS=y
++CONFIG_THERMAL_GOV_POWER_ALLOCATOR=y
++CONFIG_CPU_THERMAL=y
++CONFIG_THERMAL_EMULATION=y
++CONFIG_IMX_SC_THERMAL=y
++CONFIG_IMX8MM_THERMAL=y
++CONFIG_IMX91_THERMAL=y
++CONFIG_QORIQ_THERMAL=y
++CONFIG_WATCHDOG=y
++CONFIG_SL28CPLD_WATCHDOG=m
++CONFIG_ARM_SP805_WATCHDOG=y
++CONFIG_ARM_SBSA_WATCHDOG=y
++CONFIG_DW_WATCHDOG=y
++CONFIG_IMX2_WDT=y
++CONFIG_IMX_SC_WDT=y
++CONFIG_IMX7ULP_WDT=y
++CONFIG_ARM_SMC_WATCHDOG=y
++CONFIG_XEN_WDT=y
++CONFIG_MFD_ADP5585=y
++CONFIG_MFD_BD9571MWV=y
++CONFIG_MFD_AXP20X_I2C=y
++CONFIG_MFD_IMX_FLEXIO=y
++CONFIG_MFD_HI6421_PMIC=y
++CONFIG_MFD_FP9931=y
++CONFIG_MFD_MAX77620=y
++CONFIG_MFD_MAX96752=y
++CONFIG_MFD_MAX96752_I2C=y
++CONFIG_MFD_MAX96789=y
++CONFIG_MFD_MAX96789_I2C=y
++CONFIG_MFD_MT6397=y
++CONFIG_MFD_SEC_CORE=y
++CONFIG_MFD_SL28CPLD=y
++CONFIG_MFD_ROHM_BD718XX=y
++CONFIG_MFD_WCD934X=m
++CONFIG_REGULATOR_FIXED_VOLTAGE=y
++CONFIG_REGULATOR_AXP20X=y
++CONFIG_REGULATOR_BD718XX=y
++CONFIG_REGULATOR_BD9571MWV=y
++CONFIG_REGULATOR_FAN53555=y
++CONFIG_REGULATOR_GPIO=y
++CONFIG_REGULATOR_HI6421V530=y
++CONFIG_REGULATOR_MAX77620=y
++CONFIG_REGULATOR_MAX8973=y
++CONFIG_REGULATOR_FP9931=y
++CONFIG_REGULATOR_MP8859=y
++CONFIG_REGULATOR_MT6358=y
++CONFIG_REGULATOR_MT6397=y
++CONFIG_REGULATOR_PCA9450=y
++CONFIG_REGULATOR_PF9453=y
++CONFIG_REGULATOR_PF0900=y
++CONFIG_REGULATOR_PF8X00=y
++CONFIG_REGULATOR_PFUZE100=y
++CONFIG_REGULATOR_PWM=y
++CONFIG_REGULATOR_QCOM_SPMI=y
++CONFIG_REGULATOR_S2MPS11=y
++CONFIG_REGULATOR_TPS65132=m
++CONFIG_REGULATOR_VCTRL=m
++CONFIG_RC_CORE=m
++CONFIG_RC_DECODERS=y
++CONFIG_IR_IMON_DECODER=m
++CONFIG_IR_JVC_DECODER=m
++CONFIG_IR_MCE_KBD_DECODER=m
++CONFIG_IR_NEC_DECODER=m
++CONFIG_IR_RC5_DECODER=m
++CONFIG_IR_RC6_DECODER=m
++CONFIG_IR_RCMM_DECODER=m
++CONFIG_IR_SANYO_DECODER=m
++CONFIG_IR_SHARP_DECODER=m
++CONFIG_IR_SONY_DECODER=m
++CONFIG_IR_XMP_DECODER=m
++CONFIG_RC_DEVICES=y
++CONFIG_IR_GPIO_CIR=m
++CONFIG_MEDIA_SUPPORT=y
++CONFIG_MEDIA_CAMERA_SUPPORT=y
++CONFIG_MEDIA_ANALOG_TV_SUPPORT=y
++CONFIG_MEDIA_DIGITAL_TV_SUPPORT=y
++CONFIG_MEDIA_SDR_SUPPORT=y
++CONFIG_MEDIA_PLATFORM_SUPPORT=y
++# CONFIG_DVB_NET is not set
++CONFIG_MEDIA_USB_SUPPORT=y
++CONFIG_USB_VIDEO_CLASS=m
++CONFIG_V4L_PLATFORM_DRIVERS=y
++CONFIG_SDR_PLATFORM_DRIVERS=y
++CONFIG_V4L_MEM2MEM_DRIVERS=y
++CONFIG_VIDEO_MX8_CAPTURE=y
++CONFIG_VIDEO_MXC_CAPTURE=y
++CONFIG_VIDEO_MXC_CSI_CAMERA=y
++CONFIG_MXC_MIPI_CSI=y
++CONFIG_MXC_CAMERA_OV5640_MIPI_V2=y
++CONFIG_VIDEO_AMPHION_VPU=y
++CONFIG_VIDEO_IMX_CSI_FORMATTER=y
++CONFIG_VIDEO_DWC_MIPI_CSIS=y
++CONFIG_VIDEO_IMX8_ISI=y
++CONFIG_VIDEO_IMX8_JPEG=m
++CONFIG_VIDEO_NXP_NEOISP=m
++CONFIG_VIDEO_HANTRO=m
++CONFIG_VIDEO_AR0144=m
++CONFIG_VIDEO_IMX219=m
++CONFIG_VIDEO_OV5640=y
++CONFIG_VIDEO_OV5645=m
++CONFIG_VIDEO_AP1302=y
++CONFIG_VIDEO_AP130X=m
++CONFIG_VIDEO_MT9M114=y
++CONFIG_VIDEO_OX03C10_DRV=m
++CONFIG_VIDEO_OS08A20=m
++CONFIG_VIDEO_MAX96724=m
++CONFIG_VIDEO_MX95MBCAM=m
++CONFIG_VIDEO_DS90UB953=m
++CONFIG_VIDEO_DS90UB960=m
++CONFIG_IMX_DPU_CORE=y
++CONFIG_IMX8MM_LCDIF_CORE=y
++CONFIG_IMX_LCDIFV3_CORE=y
++CONFIG_DRM=y
++CONFIG_DRM_I2C_NXP_TDA998X=m
++CONFIG_DRM_MALI_DISPLAY=m
++CONFIG_DRM_NOUVEAU=m
++CONFIG_DRM_VIRTIO_GPU=y
++CONFIG_DRM_PANEL_BOE_TV101WUM_NL6=m
++CONFIG_DRM_PANEL_LVDS=m
++CONFIG_DRM_PANEL_SIMPLE=y
++CONFIG_DRM_PANEL_MANTIX_MLAF057WE51=m
++CONFIG_DRM_PANEL_RAYDIUM_RM67191=y
++CONFIG_DRM_PANEL_RAYDIUM_RM68200=y
++CONFIG_DRM_PANEL_RAYDIUM_RM692C9=y
++CONFIG_DRM_PANEL_ROCKTECK_HIMAX8394F=y
++CONFIG_DRM_PANEL_SEIKO_43WVF1G=y
++CONFIG_DRM_PANEL_SITRONIX_ST7703=m
++CONFIG_DRM_PANEL_TIANMA_TM050RDH03=y
++CONFIG_DRM_PANEL_TRULY_NT35597_WQXGA=m
++CONFIG_DRM_PANEL_WKS_101WX001=y
++CONFIG_DRM_DISPLAY_CONNECTOR=y
++CONFIG_DRM_LONTIUM_LT8912B=m
++CONFIG_DRM_LONTIUM_LT9611=m
++CONFIG_DRM_LONTIUM_LT9611UXC=m
++CONFIG_DRM_FSL_IMX_LVDS_BRIDGE=y
++CONFIG_DRM_MAX96752_LVDS=y
++CONFIG_DRM_MAX96789_DSI=y
++CONFIG_DRM_NWL_MIPI_DSI=y
++CONFIG_DRM_NXP_SEIKO_43WVFIG=y
++CONFIG_DRM_PARADE_PS8640=m
++CONFIG_DRM_SII902X=m
++CONFIG_DRM_SIMPLE_BRIDGE=m
++CONFIG_DRM_THINE_THC63LVD1024=m
++CONFIG_DRM_TI_SN65DSI86=m
++CONFIG_DRM_I2C_ADV7511=y
++CONFIG_DRM_I2C_ADV7511_AUDIO=y
++CONFIG_DRM_IMX95_LDB=y
++CONFIG_DRM_IMX95_MIPI_DSI=y
++CONFIG_DRM_IMX95_PIXEL_INTERLEAVER=y
++CONFIG_DRM_IMX95_PIXEL_LINK=y
++CONFIG_DRM_DW_HDMI_AHB_AUDIO=m
++CONFIG_DRM_DW_HDMI_I2S_AUDIO=m
++CONFIG_DRM_DW_HDMI_GP_AUDIO=y
++CONFIG_DRM_DW_HDMI_CEC=m
++CONFIG_DRM_ITE_IT6263=y
++CONFIG_DRM_ITE_IT6161=y
++CONFIG_DRM_IMX=y
++CONFIG_DRM_IMX_LCDIF_MUX_DISPLAY=y
++CONFIG_DRM_IMX_PARALLEL_DISPLAY=y
++CONFIG_DRM_IMX_TVE=y
++CONFIG_DRM_IMX_LDB=y
++CONFIG_DRM_IMX8QM_LDB=y
++CONFIG_DRM_IMX8QXP_LDB=y
++CONFIG_DRM_IMX8MP_LDB=y
++CONFIG_DRM_IMX93_LDB=y
++CONFIG_DRM_IMX_DW_MIPI_DSI=y
++CONFIG_DRM_IMX93_PARALLEL_DISPLAY_FORMAT=y
++CONFIG_DRM_IMX_HDMI=y
++CONFIG_DRM_IMX_SEC_DSIM=y
++CONFIG_DRM_IMX_DCNANO=y
++CONFIG_DRM_IMX95_DPU=y
++CONFIG_DRM_IMX_DCSS=y
++CONFIG_DRM_IMX_CDNS_MHDP=y
++CONFIG_DRM_ETNAVIV=m
++CONFIG_DRM_HISI_HIBMC=m
++CONFIG_DRM_HISI_KIRIN=m
++CONFIG_DRM_MXSFB=y
++CONFIG_DRM_PL111=m
++CONFIG_DRM_XEN_FRONTEND=y
++CONFIG_DRM_LIMA=m
++CONFIG_DRM_PANFROST=m
++CONFIG_FB=y
++CONFIG_FB_ARMCLCD=y
++CONFIG_FB_EFI=y
++CONFIG_FB_MXC_EINK_V2_PANEL=y
++CONFIG_BACKLIGHT_PWM=y
++CONFIG_BACKLIGHT_LP855X=m
++CONFIG_BACKLIGHT_GPIO=y
++CONFIG_BACKLIGHT_LED=y
++CONFIG_LOGO=y
++# CONFIG_LOGO_LINUX_MONO is not set
++# CONFIG_LOGO_LINUX_VGA16 is not set
++CONFIG_SOUND=y
++CONFIG_SND=y
++CONFIG_SND_ALOOP=m
++CONFIG_SND_USB_AUDIO=m
++CONFIG_SND_SOC=y
++CONFIG_SND_SOC_FSL_ASRC=m
++CONFIG_SND_SOC_FSL_MQS=m
++CONFIG_SND_SOC_FSL_MICFIL=m
++CONFIG_SND_SOC_FSL_EASRC=m
++CONFIG_SND_SOC_FSL_XCVR=m
++CONFIG_SND_SOC_FSL_RPMSG=m
++CONFIG_SND_IMX_SOC=m
++CONFIG_SND_SOC_IMX_SGTL5000=m
++CONFIG_SND_SOC_IMX_SPDIF=m
++CONFIG_SND_SOC_FSL_ASOC_CARD=m
++CONFIG_SND_SOC_IMX_AUDMIX=m
++CONFIG_SND_SOC_IMX_HDMI=m
++CONFIG_SND_SOC_IMX_CARD=m
++CONFIG_SND_SOC_IMX_PCM512X=m
++CONFIG_SND_SOC_SOF_TOPLEVEL=y
++CONFIG_SND_SOC_SOF_OF=m
++CONFIG_SND_SOC_SOF_IMX_TOPLEVEL=y
++CONFIG_SND_SOC_SOF_IMX8=m
++CONFIG_SND_SOC_SOF_IMX8M=m
++CONFIG_SND_SOC_SOF_IMX8ULP=m
++CONFIG_SND_SOC_AK4613=m
++CONFIG_SND_SOC_BT_SCO=y
++CONFIG_SND_SOC_CROS_EC_CODEC=m
++CONFIG_SND_SOC_CS42XX8_I2C=y
++CONFIG_SND_SOC_DMIC=m
++CONFIG_SND_SOC_ES7134=m
++CONFIG_SND_SOC_ES7241=m
++CONFIG_SND_SOC_GTM601=m
++CONFIG_SND_SOC_MAX98357A=m
++CONFIG_SND_SOC_MAX98927=m
++CONFIG_SND_SOC_MSM8916_WCD_ANALOG=m
++CONFIG_SND_SOC_MSM8916_WCD_DIGITAL=m
++CONFIG_SND_SOC_PCM3168A_I2C=m
++CONFIG_SND_SOC_RT5659=m
++CONFIG_SND_SOC_SIMPLE_AMPLIFIER=m
++CONFIG_SND_SOC_SIMPLE_MUX=m
++CONFIG_SND_SOC_SPDIF=m
++CONFIG_SND_SOC_TAS571X=m
++CONFIG_SND_SOC_TLV320AIC3X_I2C=y
++CONFIG_SND_SOC_WCD934X=m
++CONFIG_SND_SOC_WM8524=y
++CONFIG_SND_SOC_WM8904=m
++CONFIG_SND_SOC_WM8960=m
++CONFIG_SND_SOC_WM8962=m
++CONFIG_SND_SOC_WSA881X=m
++CONFIG_SND_SOC_RPMSG_WM8960=m
++CONFIG_SND_SOC_RPMSG_AK4497=m
++CONFIG_SND_SOC_LPASS_WSA_MACRO=m
++CONFIG_SND_SOC_LPASS_VA_MACRO=m
++CONFIG_SND_SIMPLE_CARD=y
++CONFIG_SND_AUDIO_GRAPH_CARD=y
++CONFIG_SND_VIRTIO=y
++CONFIG_HID_MULTITOUCH=m
++CONFIG_USB_HIDDEV=y
++CONFIG_I2C_HID_ACPI=m
++CONFIG_I2C_HID_OF=m
++CONFIG_USB_CONN_GPIO=y
++CONFIG_USB=y
++CONFIG_USB_OTG=y
++CONFIG_USB_XHCI_HCD=y
++CONFIG_USB_XHCI_PCI_RENESAS=m
++CONFIG_USB_EHCI_HCD=y
++CONFIG_USB_EHCI_HCD_PLATFORM=y
++CONFIG_USB_OHCI_HCD=y
++CONFIG_USB_OHCI_HCD_PLATFORM=y
++CONFIG_USB_HCD_TEST_MODE=y
++CONFIG_USB_ACM=m
++CONFIG_USB_STORAGE=y
++CONFIG_USB_UAS=y
++CONFIG_USB_CDNS_SUPPORT=y
++CONFIG_USB_CDNS3=y
++CONFIG_USB_CDNS3_GADGET=y
++CONFIG_USB_CDNS3_HOST=y
++CONFIG_USB_MUSB_HDRC=y
++CONFIG_USB_DWC3=y
++CONFIG_USB_DWC2=y
++CONFIG_USB_CHIPIDEA=y
++CONFIG_USB_CHIPIDEA_UDC=y
++CONFIG_USB_CHIPIDEA_HOST=y
++CONFIG_USB_ISP1760=y
++CONFIG_USB_SERIAL=y
++CONFIG_USB_SERIAL_CONSOLE=y
++CONFIG_USB_SERIAL_GENERIC=y
++CONFIG_USB_SERIAL_SIMPLE=y
++CONFIG_USB_SERIAL_CP210X=m
++CONFIG_USB_SERIAL_FTDI_SIO=y
++CONFIG_USB_SERIAL_OPTION=m
++CONFIG_USB_TEST=m
++CONFIG_USB_EHSET_TEST_FIXTURE=y
++CONFIG_USB_HSIC_USB3503=y
++CONFIG_NOP_USB_XCEIV=y
++CONFIG_USB_MXS_PHY=y
++CONFIG_USB_ULPI=y
++CONFIG_USB_GADGET=y
++CONFIG_USB_SNP_UDC_PLAT=y
++CONFIG_USB_BDC_UDC=y
++CONFIG_USB_CONFIGFS=y
++CONFIG_USB_CONFIGFS_SERIAL=y
++CONFIG_USB_CONFIGFS_ACM=y
++CONFIG_USB_CONFIGFS_OBEX=y
++CONFIG_USB_CONFIGFS_NCM=y
++CONFIG_USB_CONFIGFS_ECM=y
++CONFIG_USB_CONFIGFS_ECM_SUBSET=y
++CONFIG_USB_CONFIGFS_RNDIS=y
++CONFIG_USB_CONFIGFS_EEM=y
++CONFIG_USB_CONFIGFS_MASS_STORAGE=y
++CONFIG_USB_CONFIGFS_F_LB_SS=y
++CONFIG_USB_CONFIGFS_F_FS=y
++CONFIG_USB_CONFIGFS_F_UAC1=y
++CONFIG_USB_CONFIGFS_F_UAC1_LEGACY=y
++CONFIG_USB_CONFIGFS_F_UAC2=y
++CONFIG_USB_CONFIGFS_F_MIDI=y
++CONFIG_USB_CONFIGFS_F_HID=y
++CONFIG_USB_CONFIGFS_F_UVC=y
++CONFIG_USB_ZERO=m
++CONFIG_USB_AUDIO=m
++CONFIG_USB_ETH=m
++CONFIG_USB_MASS_STORAGE=m
++CONFIG_USB_G_SERIAL=m
++CONFIG_TYPEC=y
++CONFIG_TYPEC_TCPM=y
++CONFIG_TYPEC_TCPCI=y
++CONFIG_TYPEC_FUSB302=m
++CONFIG_TYPEC_TPS6598X=m
++CONFIG_TYPEC_HD3SS3220=m
++CONFIG_TYPEC_SWITCH_GPIO=y
++CONFIG_MMC=y
++CONFIG_MMC_BLOCK_MINORS=32
++CONFIG_MMC_ARMMMCI=y
++CONFIG_MMC_SDHCI=y
++CONFIG_MMC_SDHCI_ACPI=y
++CONFIG_MMC_SDHCI_PLTFM=y
++CONFIG_MMC_SDHCI_OF_ARASAN=y
++CONFIG_MMC_SDHCI_OF_ESDHC=y
++CONFIG_MMC_SDHCI_CADENCE=y
++CONFIG_MMC_SDHCI_ESDHC_IMX=y
++CONFIG_MMC_SDHCI_F_SDH30=y
++CONFIG_MMC_SPI=y
++CONFIG_MMC_DW=y
++CONFIG_MMC_DW_EXYNOS=y
++CONFIG_MMC_DW_HI3798CV200=y
++CONFIG_MMC_DW_K3=y
++CONFIG_MMC_MTK=y
++CONFIG_MMC_SDHCI_XENON=y
++CONFIG_SCSI_UFSHCD=y
++CONFIG_SCSI_UFSHCD_PLATFORM=y
++CONFIG_NEW_LEDS=y
++CONFIG_LEDS_CLASS=y
++CONFIG_LEDS_CLASS_MULTICOLOR=m
++CONFIG_LEDS_LM3692X=m
++CONFIG_LEDS_PCA9532=m
++CONFIG_LEDS_GPIO=y
++CONFIG_LEDS_PCA963X=y
++CONFIG_LEDS_PCA995X=m
++CONFIG_LEDS_PWM=y
++CONFIG_LEDS_SYSCON=y
++CONFIG_LEDS_TRIGGER_TIMER=y
++CONFIG_LEDS_TRIGGER_DISK=y
++CONFIG_LEDS_TRIGGER_HEARTBEAT=y
++CONFIG_LEDS_TRIGGER_CPU=y
++CONFIG_LEDS_TRIGGER_DEFAULT_ON=y
++CONFIG_LEDS_TRIGGER_PANIC=y
++CONFIG_EDAC=y
++CONFIG_EDAC_GHES=y
++CONFIG_EDAC_LAYERSCAPE=m
++CONFIG_EDAC_SYNOPSYS=y
++CONFIG_RTC_CLASS=y
++CONFIG_RTC_DRV_DS1307=m
++CONFIG_RTC_DRV_HYM8563=m
++CONFIG_RTC_DRV_MAX77686=y
++CONFIG_RTC_DRV_PCF85363=m
++CONFIG_RTC_DRV_M41T80=m
++CONFIG_RTC_DRV_RX8581=m
++CONFIG_RTC_DRV_RV3028=m
++CONFIG_RTC_DRV_RV8803=m
++CONFIG_RTC_DRV_S5M=y
++CONFIG_RTC_DRV_DS3232=y
++CONFIG_RTC_DRV_PCF2127=m
++CONFIG_RTC_DRV_PCF2131=m
++CONFIG_RTC_DRV_EFI=y
++CONFIG_RTC_DRV_CROS_EC=y
++CONFIG_RTC_DRV_FSL_FTM_ALARM=m
++CONFIG_RTC_DRV_PL031=y
++CONFIG_RTC_DRV_SNVS=y
++CONFIG_RTC_DRV_BBNSM=y
++CONFIG_RTC_DRV_IMX_SC=y
++CONFIG_RTC_DRV_IMX_SM=y
++CONFIG_RTC_DRV_IMX_RPMSG=y
++CONFIG_DMADEVICES=y
++CONFIG_BCM_SBA_RAID=m
++CONFIG_FSL_EDMA=y
++CONFIG_FSL_QDMA=m
++CONFIG_FSL_EDMA_V3=y
++CONFIG_IMX_SDMA=y
++CONFIG_MV_XOR_V2=y
++CONFIG_MXS_DMA=y
++CONFIG_MXC_PXP_V3=y
++CONFIG_PL330_DMA=y
++CONFIG_QCOM_HIDMA_MGMT=y
++CONFIG_QCOM_HIDMA=y
++CONFIG_DW_EDMA=y
++CONFIG_DW_EDMA_PCIE=y
++CONFIG_FSL_DPAA2_QDMA=m
++CONFIG_DMATEST=y
++CONFIG_UDMABUF=y
++CONFIG_DMABUF_HEAPS=y
++CONFIG_DMABUF_HEAPS_SYSTEM=y
++CONFIG_DMABUF_HEAPS_CMA=y
++CONFIG_UIO_PCI_GENERIC=y
++CONFIG_UIO_IVSHMEM=y
++CONFIG_VFIO=y
++CONFIG_VFIO_PCI=y
++CONFIG_VFIO_FSL_MC=y
++CONFIG_VIRTIO_PCI=y
++CONFIG_VIRTIO_BALLOON=y
++CONFIG_VIRTIO_INPUT=y
++CONFIG_VIRTIO_MMIO=y
++CONFIG_VIRTIO_IVSHMEM=y
++CONFIG_VHOST_NET=m
++CONFIG_VHOST_VSOCK=y
++CONFIG_XEN_GNTDEV=y
++CONFIG_XEN_GNTDEV_DMABUF=y
++CONFIG_XEN_GRANT_DEV_ALLOC=y
++CONFIG_XEN_GRANT_DMA_ALLOC=y
++CONFIG_XEN_PCIDEV_STUB=y
++CONFIG_XEN_PRIVCMD_IRQFD=y
++CONFIG_XEN_VIRTIO=y
++CONFIG_XEN_VIRTIO_FORCE_GRANT=y
++CONFIG_STAGING=y
++CONFIG_STAGING_MEDIA=y
++CONFIG_VIDEO_IMX_CAPTURE=y
++CONFIG_IMX8_MEDIA_DEVICE=m
++CONFIG_MHDP_HDMIRX=y
++CONFIG_MHDP_HDMIRX_CEC=y
++CONFIG_FSL_DPAA2=y
++CONFIG_FSL_PPFE=y
++CONFIG_FSL_PPFE_UTIL_DISABLED=y
++CONFIG_ETHOSU=y
++CONFIG_NEUTRON=y
++CONFIG_CHROME_PLATFORMS=y
++CONFIG_CROS_EC=y
++CONFIG_CROS_EC_I2C=y
++CONFIG_CROS_EC_SPI=y
++CONFIG_CROS_EC_CHARDEV=m
++CONFIG_CLK_VEXPRESS_OSC=y
++CONFIG_COMMON_CLK_SCMI=y
++CONFIG_COMMON_CLK_SCPI=y
++CONFIG_COMMON_CLK_CS2000_CP=y
++CONFIG_COMMON_CLK_FSL_SAI=y
++CONFIG_COMMON_CLK_S2MPS11=y
++CONFIG_COMMON_CLK_XGENE=y
++CONFIG_COMMON_CLK_PWM=y
++CONFIG_COMMON_CLK_VC5=y
++CONFIG_CLK_IMX8MM=y
++CONFIG_CLK_IMX8MN=y
++CONFIG_CLK_IMX8MP=y
++CONFIG_CLK_IMX8MQ=y
++CONFIG_CLK_IMX8QXP=y
++CONFIG_CLK_IMX8ULP=y
++CONFIG_CLK_IMX91=y
++CONFIG_CLK_IMX93=y
++CONFIG_CLK_IMX95_BLK_CTL=y
++CONFIG_HWSPINLOCK=y
++CONFIG_ARM_MHU=y
++CONFIG_IMX_MBOX=y
++CONFIG_PLATFORM_MHU=y
++CONFIG_IOMMU_IO_PGTABLE_ARMV7S=y
++CONFIG_ARM_SMMU=y
++CONFIG_ARM_SMMU_V3=y
++CONFIG_REMOTEPROC=y
++CONFIG_IMX_REMOTEPROC=y
++CONFIG_IMX_DSP_REMOTEPROC=m
++CONFIG_IMX_NEUTRON_REMOTEPROC=y
++CONFIG_IMX_ISP_REMOTEPROC=m
++CONFIG_RPMSG_CHAR=m
++CONFIG_RPMSG_CTRL=m
++CONFIG_RPMSG_QCOM_GLINK_RPM=y
++CONFIG_SOUNDWIRE=m
++CONFIG_SOUNDWIRE_QCOM=m
++CONFIG_SOC_BRCMSTB=y
++CONFIG_FSL_DPAA=y
++CONFIG_FSL_MC_DPIO=y
++CONFIG_FSL_RCPM=y
++CONFIG_FSL_QIXIS=y
++CONFIG_SOC_TI=y
++CONFIG_EXTCON_PTN5150=m
++CONFIG_EXTCON_USB_GPIO=y
++CONFIG_EXTCON_USBC_CROS_EC=y
++CONFIG_IIO=y
++CONFIG_FXLS8962AF_I2C=m
++CONFIG_IIO_ST_ACCEL_3AXIS=m
++CONFIG_IMX8QXP_ADC=y
++CONFIG_IMX93_ADC=y
++CONFIG_MAX9611=m
++CONFIG_QCOM_SPMI_VADC=m
++CONFIG_QCOM_SPMI_ADC5=m
++CONFIG_IIO_CROS_EC_SENSORS_CORE=m
++CONFIG_IIO_CROS_EC_SENSORS=m
++CONFIG_FXAS21002C=y
++CONFIG_IIO_ST_GYRO_3AXIS=m
++CONFIG_FXOS8700_I2C=y
++CONFIG_RPMSG_IIO_PEDOMETER=m
++CONFIG_INV_MPU6050_I2C=m
++CONFIG_IIO_ST_LSM6DSX=y
++CONFIG_IIO_CROS_EC_LIGHT_PROX=m
++CONFIG_SENSORS_ISL29018=y
++CONFIG_VCNL4000=m
++CONFIG_VCNL4035=m
++CONFIG_IIO_ST_MAGN_3AXIS=m
++CONFIG_IIO_CROS_EC_BARO=m
++CONFIG_MPL3115=y
++CONFIG_MS5611=m
++CONFIG_MS5611_I2C=m
++CONFIG_PWM=y
++CONFIG_PWM_ADP5585=y
++CONFIG_PWM_CROS_EC=m
++CONFIG_PWM_FSL_FTM=m
++CONFIG_PWM_IMX27=y
++CONFIG_PWM_IMX_TPM=y
++CONFIG_PWM_RPCHIP=y
++CONFIG_PWM_SL28CPLD=m
++CONFIG_SL28CPLD_INTC=y
++CONFIG_RESET_IMX7=y
++CONFIG_RESET_IMX8ULP_SIM=y
++CONFIG_PHY_MIXEL_LVDS=y
++CONFIG_PHY_MIXEL_LVDS_COMBO=y
++CONFIG_PHY_CADENCE_SALVO=y
++CONFIG_PHY_FSL_IMX8MP_LVDS=y
++CONFIG_PHY_FSL_IMX9_DPHY_RX=y
++CONFIG_PHY_FSL_IMX93_MIPI_DPHY=y
++CONFIG_PHY_MIXEL_MIPI_DPHY=y
++CONFIG_PHY_FSL_IMX8M_PCIE=y
++CONFIG_PHY_FSL_IMX8Q_PCIE=y
++CONFIG_PHY_SAMSUNG_HDMI_PHY=y
++CONFIG_PHY_QCOM_USB_HS=y
++CONFIG_PHY_SAMSUNG_USB2=y
++CONFIG_ARM_CCI_PMU=m
++CONFIG_ARM_CCN=m
++CONFIG_ARM_CMN=m
++CONFIG_ARM_SMMU_V3_PMU=m
++CONFIG_ARM_DSU_PMU=m
++CONFIG_FSL_IMX8_DDR_PMU=y
++CONFIG_FSL_IMX9_DDR_PMU=y
++CONFIG_ARM_SPE_PMU=m
++CONFIG_ARM_DMC620_PMU=m
++CONFIG_HISI_PMU=y
++CONFIG_MALI_MIDGARD=y
++CONFIG_MALI_CSF_SUPPORT=y
++CONFIG_NVMEM_IMX_OCOTP=y
++CONFIG_NVMEM_IMX_OCOTP_SCU=y
++CONFIG_NVMEM_RMEM=m
++CONFIG_FPGA=y
++CONFIG_FPGA_BRIDGE=m
++CONFIG_ALTERA_FREEZE_BRIDGE=m
++CONFIG_FPGA_REGION=m
++CONFIG_OF_FPGA_REGION=m
++CONFIG_TEE=y
++CONFIG_OPTEE=y
++CONFIG_MUX_MMIO=y
++CONFIG_SLIM_QCOM_CTRL=m
++CONFIG_MXC_SIM=y
++CONFIG_MXC_GPU_VIV=y
++CONFIG_MXC_EMVSIM=y
++CONFIG_MXC_VIDEO_WAVE6=y
++CONFIG_EXT2_FS=y
++CONFIG_EXT3_FS=y
++CONFIG_EXT4_FS_POSIX_ACL=y
++CONFIG_BTRFS_FS=m
++CONFIG_BTRFS_FS_POSIX_ACL=y
++CONFIG_FANOTIFY=y
++CONFIG_FANOTIFY_ACCESS_PERMISSIONS=y
++CONFIG_QUOTA=y
++CONFIG_AUTOFS_FS=y
++CONFIG_FUSE_FS=m
++CONFIG_CUSE=m
++CONFIG_OVERLAY_FS=m
++CONFIG_VFAT_FS=y
++CONFIG_TMPFS_POSIX_ACL=y
++CONFIG_HUGETLBFS=y
++CONFIG_EFIVAR_FS=y
++CONFIG_JFFS2_FS=y
++CONFIG_UBIFS_FS=y
++CONFIG_SQUASHFS=y
++CONFIG_SQUASHFS_XZ=y
++CONFIG_NFS_FS=y
++CONFIG_NFS_V4=y
++CONFIG_NFS_V4_1=y
++CONFIG_NFS_V4_2=y
++CONFIG_ROOT_NFS=y
++CONFIG_9P_FS=y
++CONFIG_NLS_CODEPAGE_437=y
++CONFIG_NLS_ISO8859_1=y
++CONFIG_TRUSTED_KEYS=m
++# CONFIG_TRUSTED_KEYS_TPM is not set
++# CONFIG_TRUSTED_KEYS_TEE is not set
++CONFIG_SECURITY=y
++CONFIG_CRYPTO_USER=y
++CONFIG_CRYPTO_TEST=m
++CONFIG_CRYPTO_ANUBIS=m
++CONFIG_CRYPTO_ARIA=m
++CONFIG_CRYPTO_BLOWFISH=m
++CONFIG_CRYPTO_CAMELLIA=m
++CONFIG_CRYPTO_CAST5=m
++CONFIG_CRYPTO_CAST6=m
++CONFIG_CRYPTO_FCRYPT=m
++CONFIG_CRYPTO_KHAZAD=m
++CONFIG_CRYPTO_SEED=m
++CONFIG_CRYPTO_SERPENT=m
++CONFIG_CRYPTO_TEA=m
++CONFIG_CRYPTO_TWOFISH=m
++CONFIG_CRYPTO_ARC4=m
++CONFIG_CRYPTO_CFB=m
++CONFIG_CRYPTO_CTS=m
++CONFIG_CRYPTO_LRW=m
++CONFIG_CRYPTO_OFB=m
++CONFIG_CRYPTO_PCBC=m
++CONFIG_CRYPTO_CHACHA20POLY1305=m
++CONFIG_CRYPTO_ECHAINIV=y
++CONFIG_CRYPTO_TLS=m
++CONFIG_CRYPTO_MD4=m
++CONFIG_CRYPTO_RMD160=m
++CONFIG_CRYPTO_STREEBOG=m
++CONFIG_CRYPTO_VMAC=m
++CONFIG_CRYPTO_WP512=m
++CONFIG_CRYPTO_XCBC=m
++CONFIG_CRYPTO_ANSI_CPRNG=y
++CONFIG_CRYPTO_USER_API_HASH=m
++CONFIG_CRYPTO_USER_API_SKCIPHER=m
++CONFIG_CRYPTO_USER_API_RNG=m
++CONFIG_CRYPTO_USER_API_AEAD=m
++CONFIG_CRYPTO_CHACHA20_NEON=m
++CONFIG_CRYPTO_GHASH_ARM64_CE=y
++CONFIG_CRYPTO_SHA1_ARM64_CE=y
++CONFIG_CRYPTO_SHA2_ARM64_CE=y
++CONFIG_CRYPTO_SHA512_ARM64_CE=m
++CONFIG_CRYPTO_SHA3_ARM64=m
++CONFIG_CRYPTO_SM3_ARM64_CE=m
++CONFIG_CRYPTO_POLYVAL_ARM64_CE=m
++CONFIG_CRYPTO_AES_ARM64_CE_BLK=y
++CONFIG_CRYPTO_AES_ARM64_BS=m
++CONFIG_CRYPTO_AES_ARM64_CE_CCM=y
++CONFIG_CRYPTO_CRCT10DIF_ARM64_CE=m
++CONFIG_CRYPTO_DEV_FSL_CAAM_SECVIO=m
++CONFIG_CRYPTO_DEV_FSL_CAAM=m
++CONFIG_CRYPTO_DEV_FSL_CAAM_SM_TEST=m
++CONFIG_CRYPTO_DEV_FSL_DPAA2_CAAM=m
++CONFIG_CRYPTO_DEV_CCREE=m
++CONFIG_CRYPTO_DEV_HISI_SEC2=m
++CONFIG_CRYPTO_DEV_HISI_ZIP=m
++CONFIG_CRYPTO_DEV_HISI_HPRE=m
++CONFIG_CRYPTO_DEV_HISI_TRNG=m
++CONFIG_CRYPTO_DEV_AMLOGIC_GXL=m
++CONFIG_INDIRECT_PIO=y
++CONFIG_CRC_CCITT=m
++CONFIG_CRC8=y
++CONFIG_CMA_SIZE_MBYTES=32
++CONFIG_PRINTK_TIME=y
++CONFIG_DEBUG_KERNEL=y
++CONFIG_DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT=y
++CONFIG_DEBUG_INFO_REDUCED=y
++CONFIG_MAGIC_SYSRQ=y
++CONFIG_DEBUG_FS=y
++# CONFIG_SCHED_DEBUG is not set
++# CONFIG_FTRACE is not set
++CONFIG_SAMPLES=y
++CONFIG_SAMPLE_RPMSG_CLIENT=m
++CONFIG_CORESIGHT=y
++CONFIG_CORESIGHT_LINK_AND_SINK_TMC=y
++CONFIG_CORESIGHT_CATU=m
++CONFIG_CORESIGHT_SINK_TPIU=m
++CONFIG_CORESIGHT_SINK_ETBV10=m
++CONFIG_CORESIGHT_SOURCE_ETM4X=y
++CONFIG_CORESIGHT_STM=m
++CONFIG_CORESIGHT_CPU_DEBUG=m
++CONFIG_CORESIGHT_CTI=m
++CONFIG_MEMTEST=y
+diff --git a/include/dt-bindings/clock/imx93-clock.h b/include/dt-bindings/clock/imx93-clock.h
+index 787c9e74d..1a7d8de3b 100644
+--- a/include/dt-bindings/clock/imx93-clock.h
++++ b/include/dt-bindings/clock/imx93-clock.h
+@@ -204,6 +204,7 @@
+ #define IMX93_CLK_A55_SEL		199
+ #define IMX93_CLK_A55_CORE		200
+ #define IMX93_CLK_PDM_IPG		201
+-#define IMX93_CLK_END			202
++#define IMX93_CLK_SPDIF_IPG		202
++#define IMX93_CLK_END			203
+ 
+ #endif
+-- 
+2.51.2
+

@@ -21,6 +21,11 @@ switch [board] {
 		set board_info(kernel_load_addr) "0x40200000"
 		set board_info(dtb)              "[pwd]/imx_linux/arm_v8a/arch/arm64/boot/dts/compulab/iot-gate-imx8plus-m2tpm.dtb"
 	}
+	imx93_phyboard_nash {
+		set board_info(uart)             "ttyLP0"
+		set board_info(kernel_load_addr) "0x88000000"
+		set board_info(dtb)              "[pwd]/imx_linux/arm_v8a/arch/arm64/boot/dts/freescale/imx93-phyboard-nash.dtb"
+	}
 	imx8q_evk {
 		set board_info(uart)             "ttymxc0"
 		set board_info(kernel_load_addr) "0x40200000"
@@ -51,7 +56,7 @@ if {![have_include image/uboot] || ![image_uboot_use_fit]} {
 
 create_boot_directory
 
-build { imx_linux busybox memtool }
+build { imx_linux busybox/arm_v8a memtool }
 
 # Create expected boot directory, as we cannot use build_boot_image
 exec mkdir -p [run_dir]/boot
