@@ -20,6 +20,17 @@ BUILD_OUTPUT_FILTER = 2>&1 | sed "s/^/      [Linux]  /"
 # do not confuse third-party sub-makes
 unexport .SHELLFLAGS
 
+##
+## Determine if compile_commands.json is needed
+##
+
+ifeq ($(COMPILE_COMMANDS),yes)
+    LINUX_BEAR = bear --output $(LX_DIR)/compile_commands.json --
+else
+    LINUX_BEAR = 
+endif
+
+
 kernel_config.tag:
 	$(MSG_CONFIG)Linux
 	$(VERBOSE)$(MAKE) -C $(LX_DIR) O=$(PWD) $(LX_MK_ARGS) tinyconfig $(BUILD_OUTPUT_FILTER)
@@ -33,5 +44,5 @@ kernel_config.tag: $(MAKEFILE_LIST)
 
 kernel_build.phony: kernel_config.tag
 	$(MSG_BUILD)Linux
-	$(VERBOSE)$(MAKE) $(LX_MK_ARGS) dtbs Image Image.gz $(BUILD_OUTPUT_FILTER)
+	$(VERBOSE)$(LINUX_BEAR) $(MAKE) $(LX_MK_ARGS) dtbs Image Image.gz $(BUILD_OUTPUT_FILTER)
 
