@@ -31,7 +31,7 @@ namespace Hw::Imx93_phycore_som_board {
 		BAUD_RATE  = 115200,     /* ATTENTION: other values may require to extend the imx_lpuart driver */
 	};
 
-	static constexpr Genode::size_t NR_OF_CPUS = 2; /* TODO: should be 2 */
+	static constexpr Genode::size_t NR_OF_CPUS = 2;
 
 	namespace Cpu_mmio {
 		enum {
