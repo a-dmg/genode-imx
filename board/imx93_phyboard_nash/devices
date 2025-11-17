@@ -1,2 +1,8 @@
 <devices>
+	<device name="wdog3">
+		<io_mem   address="0x42490000" size="0x10000"/>
+		<irq      number="42"/>
+		<clock    name="wdog3_gate"/>
+		<property name="timeout-sec" value="40"/>
+	</device>
 </devices>
