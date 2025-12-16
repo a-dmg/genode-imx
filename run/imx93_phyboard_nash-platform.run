@@ -4,6 +4,8 @@ create_boot_directory
 import_from_depot [depot_user]/src/[base_src] \
                   [depot_user]/src/imx93_platform \
                   [depot_user]/src/init \
+                  [depot_user]/src/report_rom \
+                  [depot_user]/src/imx8mq_sd_card \
                   [depot_user]/raw/imx93_phyboard_nash-devices
 
 install_config {
@@ -16,19 +18,54 @@ install_config {
 		<service name="RM"/> <service name="CPU"/>
 		<service name="LOG"/>
 	</parent-provides>
-	<default caps="100" ram="1M"/>
 
-	<start name="imx93_platform" ram="2M" managing_system="yes">
-		<provides><service name="Platform"/></provides>
-		<config verbose="yes" watchdog="wdog3"/>
-		<route>
-			<any-service> <parent/> </any-service>
-		</route>
-	</start>
+	<default caps="400" ram="1M"/>
 
 	<start name="timer">
 		<provides><service name="Timer"/></provides>
 		<route> <any-service> <parent/> </any-service> </route>
+	</start>
+
+
+	<start name="imx93_platform" ram="8M" managing_system="yes">
+		<provides><service name="Platform"/></provides>
+		<config verbose="yes" watchdog="wdog3">
+			<policy label="sd_card -> " info="yes">
+				<device name="usdhc2"/>
+			</policy>
+		</config>
+		<route>
+			<service name="Timer"> <child name="timer"/></service>
+			<any-service> <parent/> </any-service>
+		</route>
+	</start>
+
+	<start name="report_rom" ram="2M">
+		<provides> <service name="Report"/> <service name="ROM"/> </provides>
+		<config verbose="no">
+			<default-policy report="dummy-report"/>
+		</config>
+		<route> <any-service> <parent/> </any-service> </route>
+	</start>
+
+	<start name="sd_card" caps="300" ram="16M">
+		<binary name="imx8mq_sd_card"/>
+		<provides><service name="Block"/></provides>
+		<config report="yes">
+			<!-- mmcblk0 is the SD-Card, mmcblk1 the eMMC -->
+			<default-policy device="mmcblk0"/>
+		</config>
+		<route>
+			<service name="ROM" label="dtb">
+				<parent label="imx8mq_sd_card-imx93_phyboard_nash.dtb"/>
+			</service>
+			<service name="ROM"> <parent/> </service>
+			<service name="PD">  <parent/> </service>
+			<service name="RM">  <parent/> </service>
+			<service name="CPU"> <parent/> </service>
+			<service name="LOG"> <parent/> </service>
+			<any-service> <any-child/> </any-service>
+		</route>
 	</start>
 
 </config>

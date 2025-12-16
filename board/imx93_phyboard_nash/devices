@@ -1,8 +1,17 @@
 <devices>
 	<device name="wdog3">
 		<io_mem   address="0x42490000" size="0x10000"/>
-		<irq      number="42"/>
+		<irq      number="111"/>
 		<clock    name="wdog3_gate"/>
 		<property name="timeout-sec" value="40"/>
+	</device>
+
+	<device name="usdhc2" type="fsl,imx93-usdhc">
+		<io_mem address="0x42860000" size="0x10000"/>
+		<irq    number="119"/>
+		<clock  name="usdhc2_root" parent="system_pll_pfd1_clk" rate="400000000"/>
+		<clock  name="bus_wakeup_root" driver_name="ipg"/>
+		<clock  name="wakeup_axi_root" driver_name="ahb"/>
+		<clock  name="usdhc2_gate" driver_name="per"/>
 	</device>
 </devices>
